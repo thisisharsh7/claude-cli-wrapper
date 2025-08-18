@@ -68,5 +68,4 @@ CLI flags always override config values.
   - Does the URL load without consent gates / blockers?
   - Try `--framework html` (simpler than React)
 
-## 📄 License
-MIT
+
