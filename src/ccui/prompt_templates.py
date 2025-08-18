@@ -492,3 +492,88 @@ Output:
 - {out}
 - CODE ONLY with all modern design elements integrated
 - Ensure it looks premium and stands out from basic templates'''
+
+def regeneration_prompt(product_desc: str, framework: str, theme: str, section_list: List[str], existing_context: Dict = None) -> str:
+    """Generate prompt for regenerating specific sections of a landing page"""
+    sections_str = ", ".join(section_list)
+    fw = (framework or "html").lower()
+    
+    context_info = ""
+    if existing_context:
+        context_info = f"""
+Existing Page Context:
+- Theme: {existing_context.get('theme', theme)}
+- Framework: {existing_context.get('framework', framework)}
+- Other sections: {existing_context.get('other_sections', 'Maintain consistency with existing sections')}"""
+    
+    return f'''You are a senior frontend developer updating a landing page by regenerating specific sections with enhanced visuals.
+
+Context:
+- Product: {product_desc}
+- Framework: {fw}
+- Theme: {theme}
+- Sections to regenerate: {sections_str}{context_info}
+
+CRITICAL: The page has an established design system. You MUST follow the exact patterns used by existing sections.
+
+DESIGN SYSTEM ANALYSIS (Follow These Patterns Exactly):
+1. **Section Structure**: All sections use `.section` class with `.container` inside
+2. **Headers**: Use `.section-header animate-fade-in-up` with `h2.text-5xl.section-title` and `.section-subtitle`
+3. **Cards**: Use base `.card` class with simple hover transforms: `translateY(-8px) scale(1.02)`
+4. **Icons**: Circular 64px icons with gradient backgrounds, 32px SVGs, placed at top of cards
+5. **Typography**: `h3` titles are 1.5rem, 700 weight, `var(--text-primary)` color
+6. **Colors**: Use `var(--text-primary)`, `var(--text-secondary)`, and exact hex values like `#EF4444`
+7. **Spacing**: `margin-bottom: 24px` for icons, `16px` for titles, standard spacing throughout
+8. **Backgrounds**: Simple gradients with opacity, not complex multi-layer effects
+9. **Grid**: `repeat(auto-fit, minmax(350px, 1fr))` for card layouts
+10. **Animations**: Simple `transition: all 0.3s ease` with basic transforms
+
+EXACT PATTERNS FROM EXISTING SECTIONS:
+
+Problem Section Pattern:
+```html
+<section class="section problem" style="background: linear-gradient(135deg, #fef7f7 0%, #fef5e7 50%, #fefbf0 100%); position: relative; overflow: hidden;">
+<div class="section-pattern">
+  <svg viewBox="0 0 100 100" fill="none">
+    <pattern id="section-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
+      <circle cx="10" cy="10" r="1" fill="currentColor" opacity="0.2"/>
+    </pattern>
+    <rect width="100%" height="100%" fill="url(#section-grid)"/>
+  </svg>
+</div>
+<div class="container" style="position: relative; z-index: 1;">
+  <div class="section-header animate-fade-in-up">
+    <h2 class="text-5xl section-title">Title with <span style="color: #EF4444;">highlight</span></h2>
+    <p class="section-subtitle">Description text</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px; margin-top: 60px;">
+    <div class="card" style="border-left: 4px solid #EF4444;" onmouseover="this.style.transform='translateY(-8px) scale(1.02)'" onmouseout="this.style.transform='translateY(0) scale(1)'">
+      <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #fee2e2, #fecaca); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+        <svg style="width: 32px; height: 32px; color: #EF4444;">...</svg>
+      </div>
+      <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">Card Title</h3>
+      <p style="color: var(--text-secondary); line-height: 1.6;">Card description</p>
+    </div>
+  </div>
+</div>
+</section>
+```
+
+REQUIREMENTS:
+1. **Exact Structure**: Follow the pattern above EXACTLY - same classes, same spacing, same element hierarchy
+2. **Simple Enhancements**: Only add simple inline styles, no complex multi-layer effects
+3. **Consistent Colors**: Use the established color palette and CSS custom properties
+4. **Standard Animations**: Use the same hover effects as existing sections
+5. **Clean Code**: No overly complex styling or excessive nested elements
+6. **Semantic Content**: Make the content relevant to {product_desc} and the section purpose
+
+Instructions:
+1. Generate ONLY the requested sections: {sections_str}
+2. Follow the EXACT pattern structure shown above
+3. Keep styling simple and consistent with existing sections
+4. Use appropriate colors and content for each section type
+5. Wrap with section markers: <!-- START: {{section_name}} --> ... <!-- END: {{section_name}} -->
+6. Return ONLY the code, no explanations
+
+Generate sections that match the existing design system perfectly while adding relevant content for {product_desc}.'''

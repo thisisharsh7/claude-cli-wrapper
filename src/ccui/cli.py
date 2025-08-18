@@ -12,6 +12,7 @@ import time
 import threading
 import subprocess
 import signal
+import re
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from urllib.parse import urlparse
@@ -23,6 +24,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.status import Status
 from rich.table import Table
+from rich.prompt import Prompt, Confirm
 
 from . import __version__
 from .scrape import capture_multiple_references
@@ -39,7 +41,8 @@ from .prompt_templates import (
     high_fidelity_design_prompt,
     prototype_prompt,
     implementation_prompt,
-    landing_prompt
+    landing_prompt,
+    regeneration_prompt
 )
 
 app = typer.Typer(
@@ -264,6 +267,208 @@ def safe_json_parse(text: str) -> Dict[str, Any]:
     except Exception:
         return {}
 
+def find_landing_page_files(output_dir: str = None) -> Dict[str, str]:
+    """Find existing landing page files in common locations"""
+    if output_dir is None:
+        output_dir = "output/landing-page"
+    
+    search_paths = [
+        output_dir,
+        ".",
+        "dist",
+        "build",
+        "public"
+    ]
+    
+    found_files = {}
+    
+    for search_path in search_paths:
+        if not os.path.exists(search_path):
+            continue
+            
+        # Look for HTML files
+        for file_name in ['index.html', 'landing.html', 'page.html']:
+            file_path = os.path.join(search_path, file_name)
+            if os.path.exists(file_path):
+                found_files['html'] = file_path
+                break
+                
+        # Look for React files
+        for file_name in ['App.jsx', 'Landing.jsx', 'Page.jsx']:
+            file_path = os.path.join(search_path, file_name)
+            if os.path.exists(file_path):
+                found_files['react'] = file_path
+                break
+    
+    return found_files
+
+def extract_page_context(file_path: str) -> Dict[str, Any]:
+    """Extract metadata and context from existing landing page"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        context = {
+            'framework': 'react' if file_path.endswith('.jsx') else 'html',
+            'sections': [],
+            'theme': 'minimal',  # Default
+            'other_sections': []
+        }
+        
+        # Extract sections using markers
+        section_pattern = r'<!-- START: (\w+) -->(.*?)<!-- END: \1 -->'
+        sections = re.findall(section_pattern, content, re.DOTALL)
+        
+        for section_name, _ in sections:
+            context['sections'].append(section_name)
+        
+        # Try to detect theme from classes or comments
+        if 'brutal' in content.lower():
+            context['theme'] = 'brutalist'
+        elif 'playful' in content.lower() or 'rounded-' in content:
+            context['theme'] = 'playful'
+        elif 'corporate' in content.lower():
+            context['theme'] = 'corporate'
+            
+        return context
+        
+    except Exception as e:
+        console.print(f"[yellow]⚠️  Could not extract context from {file_path}: {e}[/yellow]")
+        return {'framework': 'html', 'sections': [], 'theme': 'minimal', 'other_sections': []}
+
+def update_design_analysis_for_regen(output_dir: str, sections_regenerated: List[str], product_desc: str, usage_stats: Dict[str, Any]) -> None:
+    """Update design_analysis.json file with regeneration information"""
+    analysis_file = os.path.join(output_dir, 'design_analysis.json')
+    
+    try:
+        # Load existing analysis or create new one
+        if os.path.exists(analysis_file):
+            with open(analysis_file, 'r') as f:
+                analysis_data = json.load(f)
+        else:
+            analysis_data = {}
+        
+        # Update regeneration history
+        if 'regeneration_history' not in analysis_data:
+            analysis_data['regeneration_history'] = []
+        
+        # Add current regeneration record
+        regen_record = {
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'sections_updated': sections_regenerated,
+            'product_description': product_desc,
+            'usage_stats': usage_stats,
+            'method': 'regen_command'
+        }
+        
+        analysis_data['regeneration_history'].append(regen_record)
+        
+        # Update last_updated timestamp
+        analysis_data['last_updated'] = time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Update sections list
+        if 'sections' not in analysis_data:
+            analysis_data['sections'] = []
+        
+        # Add regenerated sections to sections list if not already present
+        for section in sections_regenerated:
+            if section not in analysis_data['sections']:
+                analysis_data['sections'].append(section)
+        
+        # Update product understanding if provided
+        if product_desc and product_desc != "Landing page product":
+            if 'product_understanding' not in analysis_data:
+                analysis_data['product_understanding'] = {}
+            
+            analysis_data['product_understanding']['description'] = product_desc
+            analysis_data['product_understanding']['last_updated'] = time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Save updated analysis
+        with open(analysis_file, 'w') as f:
+            json.dump(analysis_data, f, indent=2)
+        
+        console.print(f"[cyan]📊 Updated design analysis: {analysis_file}[/cyan]")
+        
+    except Exception as e:
+        console.print(f"[yellow]⚠️  Could not update design analysis: {e}[/yellow]")
+
+
+def replace_sections_in_file(file_path: str, new_sections_content: str, sections_to_replace: List[str]) -> bool:
+    """Replace specific sections in the landing page file"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            original_content = f.read()
+        
+        updated_content = original_content
+        
+        # Extract new sections from generated content
+        new_section_pattern = r'<!-- START: (\w+) -->(.*?)<!-- END: \1 -->'
+        new_sections = dict(re.findall(new_section_pattern, new_sections_content, re.DOTALL))
+        
+        # Replace each requested section
+        for section_name in sections_to_replace:
+            section_key = section_name.lower()
+            if section_key in new_sections:
+                new_section_code = f'<!-- START: {section_key} -->{new_sections[section_key]}<!-- END: {section_key} -->'
+                
+                # Try multiple patterns to find existing section
+                patterns_to_try = [
+                    f'<!-- START: {section_key} -->.*?<!-- END: {section_key} -->',
+                    f'<!-- {section_name.title()} Section -->.*?(?=<!-- .* Section -->|</body>|$)',
+                    f'<section[^>]*class="[^"]*{section_key}[^"]*"[^>]*>.*?</section>'
+                ]
+                
+                section_replaced = False
+                for pattern in patterns_to_try:
+                    if re.search(pattern, updated_content, re.DOTALL | re.IGNORECASE):
+                        updated_content = re.sub(pattern, new_section_code, updated_content, flags=re.DOTALL | re.IGNORECASE)
+                        section_replaced = True
+                        console.print(f"[green]✓ Replaced {section_name} section using pattern match[/green]")
+                        break
+                
+                if not section_replaced:
+                    # Section doesn't exist, append it (could be a new section)
+                    # Try to find a good insertion point (before closing body tag)
+                    if '</body>' in updated_content:
+                        # Insert before </body> and after </script> if it exists
+                        script_end = updated_content.rfind('</script>')
+                        body_end = updated_content.rfind('</body>')
+                        
+                        if script_end > 0 and script_end < body_end:
+                            # Insert after </script> but before </body>
+                            insertion_point = script_end + len('</script>')
+                            updated_content = updated_content[:insertion_point] + f'\n{new_section_code}\n' + updated_content[insertion_point:]
+                        else:
+                            # Insert just before </body>
+                            updated_content = updated_content.replace('</body>', f'{new_section_code}\n</body>')
+                    else:
+                        updated_content += f'\n{new_section_code}'
+                    
+                    console.print(f"[yellow]⚠ Added new {section_name} section (original not found)[/yellow]")
+        
+        # Clean up any duplicate sections that might have been created
+        for section_name in sections_to_replace:
+            section_key = section_name.lower()
+            # Find all instances of this section and keep only the first one
+            section_pattern = f'<!-- START: {section_key} -->.*?<!-- END: {section_key} -->'
+            matches = list(re.finditer(section_pattern, updated_content, re.DOTALL))
+            if len(matches) > 1:
+                # Keep the first match, remove the rest
+                for i in range(len(matches) - 1, 0, -1):  # Remove from end to beginning
+                    match = matches[i]
+                    updated_content = updated_content[:match.start()] + updated_content[match.end():]
+                console.print(f"[yellow]🧹 Cleaned up duplicate {section_name} sections[/yellow]")
+        
+        # Write updated content back to file
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(updated_content)
+            
+        return True
+        
+    except Exception as e:
+        console.print(f"[red]❌ Error updating file {file_path}: {e}[/red]")
+        return False
+
 @app.command()
 def init():
     """Initialize CCUI by installing Playwright browsers"""
@@ -292,17 +497,94 @@ def init():
 
 @app.command()
 def gen(
-    desc: str = typer.Option(..., "--desc", "-d", help="Product description"),
+    desc: Optional[str] = typer.Option(None, "--desc", "-d", help="Product description"),
+    desc_file: Optional[str] = typer.Option(None, "--desc-file", help="Path to file containing product description"),
     url: Optional[str] = typer.Option(None, "--url", "-u", help="Reference URL"),
     framework: Optional[str] = typer.Option(None, "--framework", "-f", help="Output framework (html|react)"),
     theme: Optional[str] = typer.Option(None, "--theme", "-t", help="Design theme (minimal|brutalist|playful|corporate)"),
     no_design_thinking: bool = typer.Option(False, "--no-design-thinking", help="Skip design thinking process"),
     output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory")
 ):
-    """Generate a conversion-optimized landing page"""
+    """Generate a conversion-optimized landing page
+    
+    Run without arguments for interactive mode, or provide --desc for direct usage.
+    Use --desc-file to load description from a text file for longer copy.
+    """
     
     # Load configuration
     config = Config()
+    
+    # Handle desc from file or interactive mode
+    if desc_file:
+        # Read description from file
+        if not os.path.exists(desc_file):
+            console.print(f"[red]❌ Description file not found: {desc_file}[/red]")
+            raise typer.Exit(1)
+        try:
+            with open(desc_file, 'r', encoding='utf-8') as f:
+                desc = f.read().strip()
+            console.print(f"[green]📄 Description loaded from: {desc_file}[/green]")
+        except Exception as e:
+            console.print(f"[red]❌ Error reading description file: {e}[/red]")
+            raise typer.Exit(1)
+    elif not desc:
+        # Interactive mode - prompt for inputs
+        console.print("[bold blue]🎨 Interactive Mode - CCUI Generator[/bold blue]")
+        console.print("Let's create your landing page step by step.\n")
+        
+        # Get product description
+        desc = Prompt.ask(
+            "[bold]What product/service would you like to create a landing page for?[/bold]",
+            default="",
+            show_default=False
+        )
+        if not desc.strip():
+            console.print("[red]❌ Product description is required.[/red]")
+            raise typer.Exit(1)
+        
+        # Optional URL
+        if not url:
+            url_input = Prompt.ask(
+                "[bold]Reference URL (optional)[/bold]\nEnter a competitor or inspiration website",
+                default="",
+                show_default=False
+            )
+            if url_input.strip() and url_input.startswith('http'):
+                url = url_input.strip()
+        
+        # Framework selection
+        if not framework:
+            framework_choices = ['html', 'react']
+            framework = Prompt.ask(
+                "[bold]Output framework[/bold]",
+                choices=framework_choices,
+                default='html'
+            )
+        
+        # Theme selection
+        if not theme:
+            theme_choices = ['minimal', 'brutalist', 'playful', 'corporate']
+            theme = Prompt.ask(
+                "[bold]Design theme[/bold]",
+                choices=theme_choices,
+                default='minimal'
+            )
+        
+        # Design thinking process option
+        if not no_design_thinking:
+            use_design_thinking = Confirm.ask(
+                "[bold]Run full design thinking process?[/bold]\n"
+                "This includes competitor research, user analysis, and wireframing (takes longer but better results)",
+                default=True
+            )
+            no_design_thinking = not use_design_thinking
+        
+        console.print(f"\n[bold green]✅ Configuration complete![/bold green]")
+        console.print(f"Product: [cyan]{desc}[/cyan]")
+        if url:
+            console.print(f"Reference: [cyan]{url}[/cyan]")
+        console.print(f"Framework: [cyan]{framework}[/cyan] | Theme: [cyan]{theme}[/cyan]")
+        console.print(f"Design thinking: [cyan]{'Yes' if not no_design_thinking else 'No'}[/cyan]\n")
     
     # Override config with CLI arguments
     framework = framework or config.get('framework', 'html')
@@ -550,6 +832,126 @@ def gen(
     console.print(f"  [bold]cd {output_dir}[/bold]")
     console.print("  [bold]python -m http.server 3000[/bold]")
     console.print("  Then open [bold]http://localhost:3000[/bold] in your browser")
+
+@app.command()
+def regen(
+    section: Optional[str] = typer.Option(None, "--section", "-s", help="Section(s) to regenerate (comma-separated)"),
+    all: bool = typer.Option(False, "--all", help="Regenerate all sections"),
+    desc: Optional[str] = typer.Option(None, "--desc", "-d", help="Product description (auto-detected if not provided)"),
+    file: Optional[str] = typer.Option(None, "--file", "-f", help="Path to landing page file"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory")
+):
+    """Regenerate specific sections of an existing landing page
+    
+    Examples:
+      ccui regen --section hero
+      ccui regen --section hero,features
+      ccui regen --all
+    """
+    
+    config = Config()
+    output_dir = output_dir or config.get('output_dir', 'output/landing-page')
+    
+    # Find existing landing page files
+    if file:
+        if not os.path.exists(file):
+            console.print(f"[red]❌ File not found: {file}[/red]")
+            raise typer.Exit(1)
+        target_file = file
+    else:
+        found_files = find_landing_page_files(output_dir)
+        if not found_files:
+            console.print(f"[red]❌ No landing page files found in {output_dir}[/red]")
+            console.print("Run [bold]ccui gen[/bold] first to create a landing page")
+            raise typer.Exit(1)
+        
+        # Prefer React if both exist, otherwise use what's available
+        if 'react' in found_files:
+            target_file = found_files['react']
+        else:
+            target_file = found_files['html']
+    
+    console.print(f"[bold blue]🔄 Regenerating sections in: {target_file}[/bold blue]")
+    
+    # Extract context from existing file
+    context = extract_page_context(target_file)
+    framework = context['framework']
+    theme = context['theme']
+    existing_sections = context['sections']
+    
+    console.print(f"Detected: [green]{framework}[/green] | Theme: [green]{theme}[/green] | Sections: [cyan]{', '.join(existing_sections)}[/cyan]")
+    
+    # Determine sections to regenerate
+    if all:
+        sections_to_regen = existing_sections if existing_sections else ['hero', 'features', 'pricing', 'footer']
+    elif section:
+        sections_to_regen = [s.strip() for s in section.split(',')]
+    else:
+        console.print("[red]❌ Must specify --section or --all[/red]")
+        console.print("Examples:")
+        console.print("  [bold]ccui regen --section hero[/bold]")
+        console.print("  [bold]ccui regen --section hero,features[/bold]")
+        console.print("  [bold]ccui regen --all[/bold]")
+        raise typer.Exit(1)
+    
+    # Get product description
+    if not desc:
+        # Try to extract from existing metadata or config
+        if os.path.exists(os.path.join(output_dir, 'design_analysis.json')):
+            try:
+                with open(os.path.join(output_dir, 'design_analysis.json'), 'r') as f:
+                    analysis = json.load(f)
+                    desc = analysis.get('product_understanding', {}).get('problem', 'Landing page product')[:100]
+            except:
+                pass
+        
+        if not desc:
+            desc = Prompt.ask(
+                "[bold]What is this landing page for?[/bold]",
+                default="Product landing page",
+                show_default=False
+            )
+    
+    console.print(f"Regenerating sections: [bold]{', '.join(sections_to_regen)}[/bold]")
+    
+    try:
+        # Build context for existing page
+        other_sections = [s for s in existing_sections if s not in sections_to_regen]
+        existing_context = {
+            'theme': theme,
+            'framework': framework,
+            'other_sections': f"Already has: {', '.join(other_sections)}" if other_sections else "No other sections"
+        }
+        
+        # Generate new sections
+        prompt = regeneration_prompt(desc, framework, theme, sections_to_regen, existing_context)
+        new_sections_content, stats = run_claude_with_progress(
+            prompt, 
+            f"Regenerating {len(sections_to_regen)} section(s)..."
+        )
+        
+        # Replace sections in the file
+        success = replace_sections_in_file(target_file, new_sections_content, sections_to_regen)
+        
+        if success:
+            console.print(f"[bold green]✅ Successfully regenerated {len(sections_to_regen)} section(s)![/bold green]")
+            console.print(f"📁 Updated file: [bold]{target_file}[/bold]")
+            
+            # Update design_analysis.json with regeneration info
+            update_design_analysis_for_regen(output_dir, sections_to_regen, desc, stats)
+            
+            # Show preview instructions
+            console.print(f"\n[bold cyan]🌐 Preview your updated page:[/bold cyan]")
+            console.print(f"  [bold]cd {os.path.dirname(target_file)}[/bold]")
+            console.print("  [bold]python -m http.server 3000[/bold]")
+            console.print("  Then open [bold]http://localhost:3000[/bold] in your browser")
+        else:
+            console.print("[red]❌ Failed to update the landing page file[/red]")
+            raise typer.Exit(1)
+            
+    except Exception as e:
+        console.print(f"[red]❌ Error during regeneration: {e}[/red]")
+        raise typer.Exit(1)
 
 @app.command()
 def version():
