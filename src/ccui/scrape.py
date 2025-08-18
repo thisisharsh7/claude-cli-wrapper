@@ -274,7 +274,9 @@ def capture(url: str, out_dir: str = "output") -> Tuple[str, str]:
     Returns (dom_html, screenshot_path).
     """
     os.makedirs(out_dir, exist_ok=True)
-    screenshot_path = os.path.join(out_dir, "reference.jpg")
+    # Save screenshot in parent output directory
+    parent_dir = os.path.dirname(out_dir) if out_dir.endswith('landing-page') else out_dir
+    screenshot_path = os.path.join(parent_dir, "reference.jpg")
     
     if not ensure_chromium_installed():
         raise Exception("Chromium installation failed")
@@ -364,7 +366,9 @@ def capture_multiple_references(urls: List[str], out_dir: str = "output", max_ti
                     
                     # Create unique filename for each site
                     domain = urlparse(url).netloc.replace("www.", "").replace(".", "_")
-                    screenshot_path = os.path.join(out_dir, f"reference_{i+1}_{domain}.jpg")
+                    # Save screenshot in parent output directory
+                    parent_dir = os.path.dirname(out_dir) if out_dir.endswith('landing-page') else out_dir
+                    screenshot_path = os.path.join(parent_dir, f"reference_{i+1}_{domain}.jpg")
                     
                     page = browser.new_page(**get_page_options())
                     

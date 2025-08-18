@@ -267,6 +267,24 @@ def safe_json_parse(text: str) -> Dict[str, Any]:
     except Exception:
         return {}
 
+def strip_code_blocks(text: str) -> str:
+    """Strip markdown code blocks from Claude output"""
+    lines = text.strip().split('\n')
+    result_lines = []
+    in_code_block = False
+    
+    for line in lines:
+        # Check for start of code block
+        if line.strip().startswith('```'):
+            in_code_block = not in_code_block
+            continue
+        
+        # If not in code block, include the line
+        if not in_code_block:
+            result_lines.append(line)
+    
+    return '\n'.join(result_lines).strip()
+
 def find_landing_page_files(output_dir: str = None) -> Dict[str, str]:
     """Find existing landing page files in common locations"""
     if output_dir is None:
@@ -630,7 +648,7 @@ def gen(
         if framework == 'react':
             # Save React component
             with open(os.path.join(output_dir, 'App.jsx'), 'w') as f:
-                f.write(output)
+                f.write(strip_code_blocks(output))
             
             # Create minimal index.html shell
             html_shell = f'''<!DOCTYPE html>
@@ -655,7 +673,7 @@ def gen(
         else:
             # Save HTML
             with open(os.path.join(output_dir, 'index.html'), 'w') as f:
-                f.write(output)
+                f.write(strip_code_blocks(output))
         
         console.print(f"[bold green]✅ Landing page generated successfully![/bold green]")
         console.print(f"📁 Output saved to: [bold]{output_dir}[/bold]")
@@ -794,7 +812,7 @@ def gen(
             # Save code output
             if framework == 'react':
                 with open(os.path.join(output_dir, 'App.jsx'), 'w') as f:
-                    f.write(code_output)
+                    f.write(strip_code_blocks(code_output))
                 
                 html_shell = f'''<!DOCTYPE html>
 <html lang="en">
@@ -817,7 +835,7 @@ def gen(
                     f.write(html_shell)
             else:
                 with open(os.path.join(output_dir, 'index.html'), 'w') as f:
-                    f.write(code_output)
+                    f.write(strip_code_blocks(code_output))
             
             console.print(f"\n[bold green]✅ Comprehensive landing page generated successfully![/bold green]")
             console.print(f"📁 Output saved to: [bold]{output_dir}[/bold]")

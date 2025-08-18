@@ -362,218 +362,123 @@ Output JSON only:
 Rules: Use AIDA/PAS style, focus on benefits, strong CTAs, address objections, keep tone consistent.'''
 
 def implementation_prompt(product_description, copy_content, framework, theme, design_data) -> str:
-    # Extract key insights concisely
-    colors = design_data.get('design_system', {}).get('color_tokens', {})
-    gradients = design_data.get('design_system', {}).get('gradients', {})
-    shadows = design_data.get('design_system', {}).get('shadows', {})
-    animations = design_data.get('design_system', {}).get('animations', {})
-    svg_patterns = design_data.get('design_system', {}).get('svg_patterns', {})
-    logo_concept = design_data.get('design_system', {}).get('logo_concept', {})
+    """Final implementation prompt that consolidates all previous steps"""
+    # Extract only what's essential from previous stages
+    design_system = design_data.get('design_system', {})
+    content_strategy = design_data.get('content_strategy', {})
+    ux_analysis = design_data.get('ux_analysis', {})
     
-    primary_color = colors.get('primary', '#3B82F6')
-    typography = design_data.get('design_system', {}).get('typography', {}).get('typeface_choice', 'Inter')
+    # Dynamic color handling
+    primary_color = design_system.get('color_tokens', {}).get('primary')
+    color_context = f"Primary Color: {primary_color}" if primary_color else "Color System: Generate appropriate palette"
     
-    # Key UX patterns from competitive analysis
-    ux_adopt = design_data.get('ux_analysis', {}).get('recommendations', {}).get('adopt', [])[:2]
-    ux_avoid = design_data.get('ux_analysis', {}).get('recommendations', {}).get('avoid', [])[:2]
+    # Content highlights
+    value_prop = content_strategy.get('core_messaging', {}).get('value_proposition', '')
+    primary_cta = content_strategy.get('ctas', {}).get('primary_action', 'Get Started')
     
-    # Mobile wireframe priorities
-    mobile_critical = design_data.get('wireframes', {}).get('mobile_checks', {}).get('critical', [])[:3]
-    
-    return f'''You are a senior frontend engineer + modern UX designer. Build a stunning, high-conversion landing page with modern design trends.
+    return f'''You are a senior product designer implementing the final landing page.
 
 Product: {product_description}
-Copy (use verbatim, no edits): {copy_content}
 Framework: {framework}
 Theme: {theme}
 
-Design System:
-- Primary Color: {primary_color}
-- Typography: {typography}
-- Gradients: {gradients}
-- Shadows: {shadows}
-- Animations: {animations}
-- SVG Patterns: {svg_patterns}
-- Logo Concept: {logo_concept}
-- UX Adopt: {ux_adopt}
-- UX Avoid: {ux_avoid}
-- Mobile Critical: {mobile_critical}
+Consolidated Design Inputs:
+1. {color_context}
+2. Value Proposition: {value_prop[:120]}
+3. Primary CTA: {primary_cta}
+4. UX Patterns: {ux_analysis.get('recommendations', {}).get('adopt', [])[:2]}
 
-Output: CODE ONLY (full, runnable). No commentary.
+Implementation Rules:
+- Start with mobile layout then enhance for desktop
+- Make every visual element serve a purpose
+- Ensure 1.5s first contentful paint
+- Maintain AA accessibility throughout
+- Use system-generated assets where needed
+- IMPORTANT: When referencing images (reference.jpg, reference_1_*.jpg, etc.), use relative path ../filename.jpg since HTML is in output/landing-page/ but images are in output/
 
-Requirements:
-- **Modern Visual Design**: Gradient backgrounds, glass morphism effects, custom SVG patterns, subtle animations
-- **Logo & Branding**: Generate inline SVG logo based on logo concept, use in header/footer
-- **Advanced Animations**: Smooth transitions (300ms ease-out), hover effects (scale/lift), scroll-triggered animations
-- **Rich Components**: Interactive cards with hover shadows, gradient buttons, animated CTAs
-- **Visual Hierarchy**: Large typography scale (48px+ headings), generous whitespace, clear content flow
-- **Background Patterns**: Custom SVG backgrounds, geometric shapes, organic curves between sections
-- **Color Depth**: Use full gradient palette, shadows for depth, borders for definition
-- **Micro-interactions**: Button hover states, form focus animations, loading states
-- **Modern Layouts**: CSS Grid, Flexbox, asymmetric layouts where appropriate
-- **Enhanced Images**: High-quality hero images, testimonial avatars, feature icons (all with proper fallbacks)
+Visual Treatment Guide:
+<!-- IMAGE-STRATEGY: [hero-image/product-shot/illustration/none] -->
+<!-- ANIMATION-LEVEL: [none/micro/scroll-triggered] -->
+<!-- VISUAL-DENSITY: [sparse/balanced/rich] -->
 
-Technical Requirements:
-- Accessibility: semantic HTML, ARIA as needed, alt text; WCAG AA (4.5:1)
-- Layout: mobile-first responsive, clear hierarchy (Z-pattern), generous spacing
-- Performance: lazy-load images, minimize CLS, optimized animations (transform/opacity only)
-- Meta: viewport, description, Open Graph, Twitter cards, schema markup
-- Standards: Modern CSS (Grid, Flexbox, Custom Properties), ES6+, HTML5
+CRITICAL: Output ONLY the complete HTML code starting with <!DOCTYPE html>.
+Do NOT include any explanations, descriptions, or markdown formatting.
+Do NOT write about what you created - just output the raw HTML code.
+Your response should begin immediately with <!DOCTYPE html> and end with </html>.'''
 
-Visual Standards:
-- Use CSS custom properties for design system tokens
-- Implement smooth scroll behavior and focus management
-- Add subtle parallax or scroll effects where appropriate
-- Include loading states and empty states for better UX
-- Use proper typography scale and vertical rhythm
-
-Deliver:
-- ONLY the complete, production-ready {framework} code with inline styles
-- Include all modern design elements: gradients, animations, SVG backgrounds, custom logo
-- Ensure visual impact that stands out from basic templates'''
 
 def landing_prompt(product_description, framework, theme, sections, design_data=None) -> str:
     sections_str = ", ".join(sections) if sections else "hero, features, pricing, footer"
-    fw = (framework or "html").lower()
-    is_react = fw == "react"
-    out = "One React file (App.jsx) plus minimal index.html shell." if is_react else "One complete index.html."
     
-    # Extract key insights if design_data available
-    design_context = ""
+    # Dynamic content integration
+    content_hooks = ""
     if design_data:
-        primary_cta = design_data.get('content_strategy', {}).get('ctas', {}).get('primary_action', 'Get Started')
-        value_prop = design_data.get('content_strategy', {}).get('core_messaging', {}).get('value_proposition', '')[:100]
-        primary_color = design_data.get('design_system', {}).get('color_tokens', {}).get('primary', '#3B82F6')
-        ux_adopt = design_data.get('ux_analysis', {}).get('recommendations', {}).get('adopt', [])[:2]
-        
-        design_context = f"""
-Strategic Context:
-- Primary CTA: {primary_cta}
-- Value Prop: {value_prop}
-- Brand Color: {primary_color}
-- UX Patterns: {ux_adopt}"""
+        cs = design_data.get('content_strategy', {})
+        hooks = [
+            f"Value Hook: {cs.get('core_messaging',{}).get('unique_angle','')}",
+            f"Emotional Trigger: {cs.get('hero',{}).get('supporting_element','')}",
+            f"Social Proof: {cs.get('objections',{}).get('trust_elements',[])[:1]}"
+        ]
+        content_hooks = "\nContent Anchors:\n- " + "\n- ".join(filter(None, hooks))
+    
+    return f'''Create a high-converting landing page that adapts to its purpose.
 
-    return f'''You are a senior frontend engineer + modern UX designer.
+Product: {product_description}
+Sections: {sections_str}
+Framework: {framework}
+Theme: {theme}
+{content_hooks}
 
-Goal: Build a stunning, conversion-optimized landing page for: {product_description}
-Framework: {fw}; Theme: {theme}{design_context}
-
-Modern Design Requirements:
-- **Visual Impact**: Gradient backgrounds, subtle animations, custom SVG patterns, glass morphism
-- **Typography**: Large, bold headings (48px+), proper hierarchy, readable line spacing
-- **Logo & Branding**: Create inline SVG logo matching the product theme
-- **Animations**: Smooth transitions (300ms), hover effects (transform/scale), scroll-triggered animations  
-- **Components**: Interactive cards with shadows, gradient buttons, animated CTAs, form validation
-- **Backgrounds**: Custom SVG patterns, organic shapes, section dividers, geometric elements
-- **Colors**: Rich gradients, proper shadows, depth through layering
-- **Images**: High-quality placeholders, proper aspect ratios, lazy loading
+Design Framework:
+1. Assess each section's communication goal
+2. Choose visual treatment accordingly:
+   - Data → Charts/diagrams
+   - Features → Product shots
+   - Benefits → Illustrations
+   - Social Proof → Testimonials with photos
 
 Technical Requirements:
-- **UX Heuristics**: Large CTAs (Fitts), simple nav (Hick), clear hierarchy, generous whitespace
-- **Accessibility**: Semantic HTML, ARIA labels, alt text, WCAG AA contrast (4.5:1)
-- **Responsive**: Mobile-first CSS Grid/Flexbox, fluid typography, touch-friendly targets
-- **Performance**: Lazy-load images, minimize CLS, optimized animations (transform/opacity only)
-- **Modern Standards**: CSS custom properties, ES6+, proper meta tags, schema markup
+- Semantic HTML5
+- CSS custom properties
+- Responsive images
+- Accessible interactions
+- IMPORTANT: When referencing images (reference.jpg, reference_1_*.jpg, etc.), use relative path ../filename.jpg since HTML is in output/landing-page/ but images are in output/
 
-Content & Structure:
-- **Sections**: {sections_str} (with modern styling and animations)
-- **Copy**: Benefit-focused, conversion-optimized, no lorem ipsum
-- **Images**: Unsplash/Picsum high-quality images with descriptive alt text
-- **CTAs**: Multiple conversion points, A/B tested button styles
+CRITICAL: Output ONLY the complete HTML code starting with <!DOCTYPE html>.
+Do NOT include any explanations, descriptions, or markdown formatting.
+Do NOT write about what you created - just output the raw HTML code.
+Your response should begin immediately with <!DOCTYPE html> and end with </html>.'''
 
-Visual Style Guide:
-- Use CSS custom properties for consistent design tokens
-- Implement smooth scroll and focus management
-- Add micro-interactions for better engagement
-- Include loading and empty states
-- Apply proper vertical rhythm and spacing scale
 
-Output:
-- {out}
-- CODE ONLY with all modern design elements integrated
-- Ensure it looks premium and stands out from basic templates'''
-
-def regeneration_prompt(product_desc: str, framework: str, theme: str, section_list: List[str], existing_context: Dict = None) -> str:
-    """Generate prompt for regenerating specific sections of a landing page"""
-    sections_str = ", ".join(section_list)
-    fw = (framework or "html").lower()
-    
-    context_info = ""
+def regeneration_prompt(product_desc, framework, theme, section_list, existing_context=None) -> str:
+    """Smart regeneration that understands existing design language"""
+    context_analysis = ""
     if existing_context:
-        context_info = f"""
-Existing Page Context:
-- Theme: {existing_context.get('theme', theme)}
-- Framework: {existing_context.get('framework', framework)}
-- Other sections: {existing_context.get('other_sections', 'Maintain consistency with existing sections')}"""
+        context_analysis = "\n".join(
+            f"- {k}: {v[:60]}..." if isinstance(v,str) else f"- {k}: {v}"
+            for k,v in existing_context.items()
+        )
     
-    return f'''You are a senior frontend developer updating a landing page by regenerating specific sections with enhanced visuals.
+    return f'''You are a design system specialist refreshing page sections.
 
-Context:
-- Product: {product_desc}
-- Framework: {fw}
-- Theme: {theme}
-- Sections to regenerate: {sections_str}{context_info}
+Product: {product_desc}
+Sections to update: {", ".join(section_list)}
+Framework: {framework}
 
-CRITICAL: The page has an established design system. You MUST follow the exact patterns used by existing sections.
+Existing Context:
+{context_analysis or "No specific context provided"}
 
-DESIGN SYSTEM ANALYSIS (Follow These Patterns Exactly):
-1. **Section Structure**: All sections use `.section` class with `.container` inside
-2. **Headers**: Use `.section-header animate-fade-in-up` with `h2.text-5xl.section-title` and `.section-subtitle`
-3. **Cards**: Use base `.card` class with simple hover transforms: `translateY(-8px) scale(1.02)`
-4. **Icons**: Circular 64px icons with gradient backgrounds, 32px SVGs, placed at top of cards
-5. **Typography**: `h3` titles are 1.5rem, 700 weight, `var(--text-primary)` color
-6. **Colors**: Use `var(--text-primary)`, `var(--text-secondary)`, and exact hex values like `#EF4444`
-7. **Spacing**: `margin-bottom: 24px` for icons, `16px` for titles, standard spacing throughout
-8. **Backgrounds**: Simple gradients with opacity, not complex multi-layer effects
-9. **Grid**: `repeat(auto-fit, minmax(350px, 1fr))` for card layouts
-10. **Animations**: Simple `transition: all 0.3s ease` with basic transforms
+Regeneration Rules:
+1. Preserve established design tokens
+2. Maintain consistent spacing system
+3. Keep existing interaction patterns
+4. Only introduce new visuals if they:
+   - Solve a specific communication gap
+   - Match the established style
+   - Improve conversion potential
+5. IMPORTANT: When referencing images (reference.jpg, reference_1_*.jpg, etc.), use relative path ../filename.jpg since HTML is in output/landing-page/ but images are in output/
 
-EXACT PATTERNS FROM EXISTING SECTIONS:
-
-Problem Section Pattern:
-```html
-<section class="section problem" style="background: linear-gradient(135deg, #fef7f7 0%, #fef5e7 50%, #fefbf0 100%); position: relative; overflow: hidden;">
-<div class="section-pattern">
-  <svg viewBox="0 0 100 100" fill="none">
-    <pattern id="section-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.3"/>
-      <circle cx="10" cy="10" r="1" fill="currentColor" opacity="0.2"/>
-    </pattern>
-    <rect width="100%" height="100%" fill="url(#section-grid)"/>
-  </svg>
-</div>
-<div class="container" style="position: relative; z-index: 1;">
-  <div class="section-header animate-fade-in-up">
-    <h2 class="text-5xl section-title">Title with <span style="color: #EF4444;">highlight</span></h2>
-    <p class="section-subtitle">Description text</p>
-  </div>
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px; margin-top: 60px;">
-    <div class="card" style="border-left: 4px solid #EF4444;" onmouseover="this.style.transform='translateY(-8px) scale(1.02)'" onmouseout="this.style.transform='translateY(0) scale(1)'">
-      <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #fee2e2, #fecaca); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
-        <svg style="width: 32px; height: 32px; color: #EF4444;">...</svg>
-      </div>
-      <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">Card Title</h3>
-      <p style="color: var(--text-secondary); line-height: 1.6;">Card description</p>
-    </div>
-  </div>
-</div>
-</section>
-```
-
-REQUIREMENTS:
-1. **Exact Structure**: Follow the pattern above EXACTLY - same classes, same spacing, same element hierarchy
-2. **Simple Enhancements**: Only add simple inline styles, no complex multi-layer effects
-3. **Consistent Colors**: Use the established color palette and CSS custom properties
-4. **Standard Animations**: Use the same hover effects as existing sections
-5. **Clean Code**: No overly complex styling or excessive nested elements
-6. **Semantic Content**: Make the content relevant to {product_desc} and the section purpose
-
-Instructions:
-1. Generate ONLY the requested sections: {sections_str}
-2. Follow the EXACT pattern structure shown above
-3. Keep styling simple and consistent with existing sections
-4. Use appropriate colors and content for each section type
-5. Wrap with section markers: <!-- START: {{section_name}} --> ... <!-- END: {{section_name}} -->
-6. Return ONLY the code, no explanations
-
-Generate sections that match the existing design system perfectly while adding relevant content for {product_desc}.'''
+CRITICAL: Output ONLY the complete HTML code starting with <!DOCTYPE html>.
+Do NOT include any explanations, descriptions, or markdown formatting.
+Do NOT write about what you created - just output the raw HTML code.
+Your response should begin immediately with <!DOCTYPE html> and end with </html>.'''

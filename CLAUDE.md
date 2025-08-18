@@ -4,25 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CCUI (Claude Code UI Generator) is a sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. The tool leverages Claude AI to implement a comprehensive 10-phase design process used by professional UX agencies, combining automated competitor analysis with strategic design decisions.
+CCUI (Claude Code UI Generator) is a sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. The tool leverages Claude AI to implement a comprehensive 12-phase design process used by professional UX agencies, combining automated competitor analysis with strategic design decisions.
 
 ### What This Project Does
 
-1. **Automated Competitive Research**: Discovers 3 competitor websites and design showcases from Behance/Dribbble
-2. **Professional Design Process**: Implements a 10-phase UX methodology including product understanding, user research, wireframing, and visual design
+1. **Automated Competitive Research**: Discovers 3 competitor websites and design showcases
+2. **Professional Design Process**: Implements a 12-phase UX methodology including product understanding, user research, wireframing, and visual design
 3. **Screenshot Analysis**: Uses Playwright to capture and analyze competitor landing pages for design patterns
 4. **Strategic Copy Generation**: Creates conversion-optimized copy based on user research and competitive analysis  
 5. **Code Generation**: Outputs production-ready HTML or React components with TailwindCSS styling
 6. **Real-time Streaming**: Shows Claude's design thinking process in real-time with progress indicators
+7. **Section Regeneration**: Allows regenerating specific sections of existing landing pages
 
 ### Key Features
 
 - **Automated Reference Discovery**: Finds competitors and design inspiration automatically using Claude AI
 - **Multi-site Competitive Analysis**: Captures and analyzes 3 reference sites with screenshot comparison
-- **Professional Design Process**: 10-phase methodology including empathy mapping, user journeys, and conversion optimization
+- **Professional Design Process**: 12-phase methodology including empathy mapping, user journeys, and conversion optimization
 - **Conversion-Optimized Copy**: Strategic messaging based on competitive analysis and user research
 - **Multiple Output Formats**: Generates HTML with inline TailwindCSS or React components with ESM imports
 - **Real-time Progress**: Streams Claude output live with rich terminal formatting and progress indicators
+- **Section Regeneration**: Regenerate specific sections (hero, features, pricing, etc.) of existing landing pages
+- **Interactive Mode**: Guided setup for users without command-line arguments
 - **Robust Error Handling**: Timeout protection, graceful fallbacks, and comprehensive error reporting
 - **Cross-platform Support**: Works on Windows, macOS, and Linux
 - **Memory Efficient**: Cleanup between captures for large reference sets
@@ -51,6 +54,12 @@ ccui init
 
 ### Basic Usage
 
+#### Interactive Mode (Recommended)
+```bash
+# Guided setup - prompts for all options
+ccui gen
+```
+
 #### Quick Generation (Simple Mode)
 ```bash
 # Fast generation without design thinking process
@@ -59,7 +68,7 @@ ccui gen --desc "AI-powered project management tool" --no-design-thinking
 
 #### Comprehensive Analysis (Default Mode)
 ```bash
-# Full 10-phase design thinking process with automated competitor discovery (3 references)
+# Full 12-phase design thinking process with automated competitor discovery (3 references)
 ccui gen --desc "AI-powered project management tool"
 ```
 
@@ -79,6 +88,20 @@ ccui gen --desc "Product description" --theme brutalist
 
 # Combine multiple options
 ccui gen --desc "Product" --framework react --theme corporate --no-design-thinking
+
+# Load description from file
+ccui gen --desc-file product_description.txt
+```
+
+#### Regenerate Sections
+```bash
+# Regenerate specific sections
+ccui regen --section hero
+ccui regen --section hero,features
+ccui regen --all
+
+# Regenerate with custom description
+ccui regen --section hero --desc "Updated product description"
 ```
 
 ### Preview Generated Output
@@ -106,39 +129,44 @@ This is a Python CLI tool (`ccui`) that wraps Claude Code to automatically gener
 ### Core Components
 
 1. **CLI Interface** (`src/ccui/cli.py`)
-   - Main entry point with Typer-based commands (`init`, `gen`)
+   - Main entry point with Typer-based commands (`init`, `gen`, `regen`)
    - Handles command-line arguments and configuration loading
    - Orchestrates the entire automated design thinking workflow
    - Features robust subprocess handling with real-time output streaming
+   - Interactive mode for guided user experience
+   - Section regeneration capabilities
 
-2. **Web Scraping** (`src/ccui/scrape.py`)
+2. **Web Scraping** (`src/ccui/scrape.py` & `src/ccui/scrape_simple.py`)
    - Uses Playwright to capture reference website screenshots
    - Handles cookie consent banners and modals automatically
    - Supports multiple reference capture for competitive analysis
    - Features comprehensive error handling and fallback strategies
    - Optimized resource blocking for faster page loads
+   - Simple and advanced scraping modes
 
 3. **Prompt Templates** (`src/ccui/prompt_templates.py`)
-   - Implements 10-phase professional design thinking workflow
+   - Implements 12-phase professional design thinking workflow
    - Each phase has specialized prompts for structured outputs
    - Incorporates UI/UX best practices (Fitts's Law, Hick's Law, accessibility)
    - Supports both automated and simple generation modes
+   - Section regeneration prompts
 
 ### Design Thinking Workflow (Default Mode)
 
-The tool implements a comprehensive 10-phase design process:
+The tool implements a comprehensive 12-phase design process:
 
-1. **Reference Discovery** - Auto-finds 3 competitor sites + design showcases
-2. **Deep Product Understanding** - Value proposition analysis and press release drafting
-3. **Competitive Landscape Analysis** - Screenshot analysis for patterns and weaknesses
-4. **Define Audience & Goals** - User research and persona development
-5. **Draft Site Flow** - Journey mapping and lean sitemap creation
-6. **Write Content First** - Strategic copy before visual design
-7. **Rough Wireframes** - Mobile-first layout validation
-8. **Visual Identity & Design System** - Typography, colors, WCAG compliance
-9. **High-Fidelity Design** - Interactive elements and polish
-10. **Final Copy Generation** - Professional conversion copy
-11. **Implementation** - Code generation with strategic design decisions
+1. **Reference Discovery** - Auto-finds 3 competitor sites using Claude AI
+2. **Screenshot Capture** - Playwright automation captures competitor landing pages
+3. **Deep Product Understanding** - Value proposition analysis and problem identification
+4. **Competitive UX Analysis** - Screenshot analysis for patterns and weaknesses
+5. **User Empathy Mapping** - User research and persona development
+6. **Define Site Flow** - Journey mapping and lean sitemap creation
+7. **Content Strategy** - Strategic copy development before visual design
+8. **Wireframe Validation** - Mobile-first layout validation
+9. **Design System** - Typography, colors, WCAG compliance
+10. **High-Fidelity Design** - Interactive elements and polish
+11. **Final Copy Generation** - Professional conversion copy refinement
+12. **Implementation** - Code generation with strategic design decisions
 
 ### Configuration
 
@@ -155,9 +183,11 @@ output_dir: output/landing-page
 
 - **Automated Reference Discovery**: Finds competitors and design inspiration automatically
 - **Multi-site Competitive Analysis**: Captures and analyzes 3 reference sites
-- **Professional Design Process**: 10-phase methodology used by UX agencies
+- **Professional Design Process**: 12-phase methodology used by UX agencies
 - **Conversion-Optimized Copy**: Strategic messaging based on user research
 - **Real-time Streaming**: Claude output streams live to user with progress indication
+- **Section Regeneration**: Update specific sections without rebuilding entire page
+- **Interactive Mode**: Guided setup for all options and preferences
 - **Robust Error Handling**: Timeout protection, graceful fallbacks, comprehensive error reporting
 - **Cross-platform**: Works on Windows, macOS, Linux
 - **Thread-safe I/O**: Non-blocking stdout/stderr handling
@@ -193,6 +223,12 @@ Features:
 
 ### Usage Patterns
 
+**Interactive Mode (Recommended)**:
+```bash
+ccui gen
+# Guided setup with prompts for all options
+```
+
 **Quick Generation (Simple Mode)**:
 ```bash
 ccui gen --desc "AI-powered project management tool" --no-design-thinking
@@ -210,6 +246,12 @@ ccui gen --url https://linear.app --desc "AI-powered project management tool"
 # Uses provided URL as primary reference, finds additional competitors
 ```
 
+**Section Regeneration**:
+```bash
+ccui regen --section hero,features
+# Regenerates specific sections of existing landing page
+```
+
 ## Development Notes
 
 ### Code Style
@@ -222,22 +264,28 @@ ccui gen --url https://linear.app --desc "AI-powered project management tool"
 
 The tool implements a sophisticated workflow:
 
-1. **Reference Discovery Phase**: Uses Claude AI to find 3 competitor websites and design showcases
-2. **Screenshot Capture**: Playwright automation captures competitor landing pages with error handling
-3. **Design Thinking Process**: 10-phase methodology including:
+1. **Reference Discovery Phase**: Uses Claude AI to find 3 competitor websites
+2. **Screenshot Capture**: Playwright automation captures competitor landing pages with error handling  
+3. **Design Thinking Process**: 12-phase methodology including:
    - Deep product understanding and value proposition analysis
-   - Competitive landscape analysis of captured screenshots
+   - Competitive UX analysis of captured screenshots
    - User empathy mapping and persona development
    - Site flow and journey mapping
-   - Content-first copywriting approach
+   - Content strategy development
    - Mobile-first wireframing validation
    - Visual identity and design system creation
    - High-fidelity design with interactive elements
    - Final copy refinement and polish
    - Strategic implementation with conversion optimization
 
-4. **Code Generation**: Produces production-ready HTML or React components with:
-   - Semantic HTML structure
+4. **Section Management**: Advanced section handling including:
+   - HTML comment markers for section identification
+   - Individual section regeneration without affecting other parts
+   - Context preservation during section updates
+   - Design analysis tracking for regeneration history
+
+5. **Code Generation**: Produces production-ready HTML or React components with:
+   - Semantic HTML structure with section markers
    - TailwindCSS styling with custom design system
    - SEO optimization with meta tags and schema markup
    - Responsive design patterns
@@ -250,7 +298,7 @@ src/ccui/
 ├── __init__.py          # Package initialization
 ├── __main__.py          # Entry point for python -m ccui
 ├── cli.py              # Main CLI interface with Typer commands
-├── prompt_templates.py  # 10-phase design thinking prompts
+├── prompt_templates.py  # 12-phase design thinking prompts
 ├── scrape.py           # Advanced Playwright web scraping
 └── scrape_simple.py    # Simplified screenshot capture
 ```
