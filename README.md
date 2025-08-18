@@ -32,7 +32,7 @@ pip install -e .
 ccui init
 
 # 4) Generate a landing page inspired by a URL
-ccui gen --url https://linear.app --desc "AI bug tracker for teams"
+ccui gen --url https://www.creatorscope.com --desc "Access The Power Of Micro-Creators Safely.The most advanced micro-influencer prospecting platform"
 
 # 5) Preview locally (pick one)
 python -m http.server -d output/landing-page 3000

@@ -235,9 +235,26 @@ Output JSON only:
   }},
   "color_tokens": {{
     "primary":"#...","primary_light":"#...","primary_dark":"#...",
-    "secondary":"#...","surface":"#...","background":"#...",
-    "success":"#...","error":"#...",
-    "text_primary":"#...","text_secondary":"#...","text_muted":"#..."
+    "secondary":"#...","accent":"#...","surface":"#...","background":"#...",
+    "success":"#...","warning":"#...","error":"#...",
+    "text_primary":"#...","text_secondary":"#...","text_muted":"#...",
+    "border":"#...","border_light":"#...","shadow":"#..."
+  }},
+  "gradients": {{
+    "primary_gradient":"linear-gradient(135deg, #... 0%, #... 100%)",
+    "hero_gradient":"linear-gradient(180deg, #... 0%, #... 100%)",
+    "card_gradient":"linear-gradient(145deg, #... 0%, #... 100%)",
+    "button_gradient":"linear-gradient(135deg, #... 0%, #... 100%)"
+  }},
+  "shadows": {{
+    "card_shadow":"0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+    "button_shadow":"0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)",
+    "hover_shadow":"0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)"
+  }},
+  "animations": {{
+    "duration": {{"fast":"150ms","normal":"300ms","slow":"500ms"}},
+    "easing": {{"ease_in":"cubic-bezier(0.4, 0, 1, 1)","ease_out":"cubic-bezier(0, 0, 0.2, 1)","ease_in_out":"cubic-bezier(0.4, 0, 0.2, 1)"}},
+    "transforms": {{"scale_hover":"scale(1.05)","scale_click":"scale(0.95)","lift":"translateY(-2px)"}}
   }},
   "wcag_contrast": {{
     "primary_cta":"X.X:1 - PASS/FAIL",
@@ -251,14 +268,38 @@ Output JSON only:
     {{"element":"...","specification":"...","usage":"..."}}
   ],
   "components": {{
-    "buttons": {{"primary":{{"default":"...","hover":"...","active":"...","disabled":"..."}}}},
-    "inputs": {{"text_field":{{"default":"...","focus":"...","error":"..."}}}},
-    "cards": {{"content":"...","pricing":"...","testimonial":"..."}}
+    "buttons": {{
+      "primary":{{"default":"...","hover":"...","active":"...","disabled":"...","animation":"transform 300ms ease-out"}},
+      "secondary":{{"default":"...","hover":"...","active":"...","disabled":"...","animation":"all 200ms ease-in-out"}},
+      "ghost":{{"default":"...","hover":"...","active":"...","disabled":"...","animation":"all 150ms ease-in-out"}}
+    }},
+    "inputs": {{
+      "text_field":{{"default":"...","focus":"...","error":"...","animation":"border-color 200ms ease-in-out"}},
+      "select":{{"default":"...","focus":"...","hover":"...","animation":"all 150ms ease-out"}},
+      "textarea":{{"default":"...","focus":"...","error":"...","animation":"border-color 200ms ease-in-out"}}
+    }},
+    "cards": {{
+      "content":{{"default":"...","hover":"...","animation":"transform 300ms ease-out, box-shadow 300ms ease-out"}},
+      "pricing":{{"default":"...","hover":"...","featured":"...","animation":"transform 200ms ease-in-out"}},
+      "testimonial":{{"default":"...","hover":"...","animation":"all 250ms ease-out"}}
+    }}
   }},
-  "spacing_system": {{"scale":["4px","8px","16px","24px"],"usage":"..."}},
+  "spacing_system": {{"scale":["2px","4px","8px","12px","16px","24px","32px","48px","64px","96px"],"usage":"..."}},
+  "border_radius": {{"sm":"4px","md":"8px","lg":"12px","xl":"16px","2xl":"24px","full":"9999px"}},
+  "svg_patterns": {{
+    "hero_bg":"Complex geometric SVG background pattern with subtle animation",
+    "section_divider":"Organic wave or curve SVG divider between sections",
+    "decorative_elements":"Abstract shapes, dots, or lines for visual interest"
+  }},
+  "logo_concept": {{
+    "style":"Modern, minimal, geometric/organic",
+    "elements":"Icon + wordmark or symbol only",
+    "colors":"Uses primary brand colors",
+    "usage":"Header, footer, favicon"
+  }},
   "summary": "..."
 }}
-Rules: Ensure uniqueness + consistency, mobile-first, contrast accessible.'''
+Rules: Modern, animated, gradient-rich, high-contrast, mobile-optimized, includes SVG patterns and logo concept.'''
 
 
 def high_fidelity_design_prompt(product_desc, design_system, wireframes, content_strategy) -> str:
@@ -323,6 +364,12 @@ Rules: Use AIDA/PAS style, focus on benefits, strong CTAs, address objections, k
 def implementation_prompt(product_description, copy_content, framework, theme, design_data) -> str:
     # Extract key insights concisely
     colors = design_data.get('design_system', {}).get('color_tokens', {})
+    gradients = design_data.get('design_system', {}).get('gradients', {})
+    shadows = design_data.get('design_system', {}).get('shadows', {})
+    animations = design_data.get('design_system', {}).get('animations', {})
+    svg_patterns = design_data.get('design_system', {}).get('svg_patterns', {})
+    logo_concept = design_data.get('design_system', {}).get('logo_concept', {})
+    
     primary_color = colors.get('primary', '#3B82F6')
     typography = design_data.get('design_system', {}).get('typography', {}).get('typeface_choice', 'Inter')
     
@@ -333,7 +380,7 @@ def implementation_prompt(product_description, copy_content, framework, theme, d
     # Mobile wireframe priorities
     mobile_critical = design_data.get('wireframes', {}).get('mobile_checks', {}).get('critical', [])[:3]
     
-    return f'''You are a senior frontend engineer. Build a high-conversion landing page.
+    return f'''You are a senior frontend engineer + modern UX designer. Build a stunning, high-conversion landing page with modern design trends.
 
 Product: {product_description}
 Copy (use verbatim, no edits): {copy_content}
@@ -343,6 +390,11 @@ Theme: {theme}
 Design System:
 - Primary Color: {primary_color}
 - Typography: {typography}
+- Gradients: {gradients}
+- Shadows: {shadows}
+- Animations: {animations}
+- SVG Patterns: {svg_patterns}
+- Logo Concept: {logo_concept}
 - UX Adopt: {ux_adopt}
 - UX Avoid: {ux_avoid}
 - Mobile Critical: {mobile_critical}
@@ -350,16 +402,35 @@ Design System:
 Output: CODE ONLY (full, runnable). No commentary.
 
 Requirements:
-- Accessibility: semantic HTML, ARIA as needed, alt text; WCAG AA (4.5:1).
-- Layout: mobile-first flex/grid; max ~75ch text; 8px spacing; clear hierarchy (Z-pattern).
-- Nav: ≤5 items (Hick's Law).
-- Performance: lazy-load offscreen images; minimize CLS; prefer WebP.
-- Images: placeholders (https://placeholder.com or https://picsum.photos), alt="Example [type] image".
-- Meta: include viewport, description, basic Open Graph/Twitter.
-- Standards: ES6+, CSS3, HTML5.
+- **Modern Visual Design**: Gradient backgrounds, glass morphism effects, custom SVG patterns, subtle animations
+- **Logo & Branding**: Generate inline SVG logo based on logo concept, use in header/footer
+- **Advanced Animations**: Smooth transitions (300ms ease-out), hover effects (scale/lift), scroll-triggered animations
+- **Rich Components**: Interactive cards with hover shadows, gradient buttons, animated CTAs
+- **Visual Hierarchy**: Large typography scale (48px+ headings), generous whitespace, clear content flow
+- **Background Patterns**: Custom SVG backgrounds, geometric shapes, organic curves between sections
+- **Color Depth**: Use full gradient palette, shadows for depth, borders for definition
+- **Micro-interactions**: Button hover states, form focus animations, loading states
+- **Modern Layouts**: CSS Grid, Flexbox, asymmetric layouts where appropriate
+- **Enhanced Images**: High-quality hero images, testimonial avatars, feature icons (all with proper fallbacks)
+
+Technical Requirements:
+- Accessibility: semantic HTML, ARIA as needed, alt text; WCAG AA (4.5:1)
+- Layout: mobile-first responsive, clear hierarchy (Z-pattern), generous spacing
+- Performance: lazy-load images, minimize CLS, optimized animations (transform/opacity only)
+- Meta: viewport, description, Open Graph, Twitter cards, schema markup
+- Standards: Modern CSS (Grid, Flexbox, Custom Properties), ES6+, HTML5
+
+Visual Standards:
+- Use CSS custom properties for design system tokens
+- Implement smooth scroll behavior and focus management
+- Add subtle parallax or scroll effects where appropriate
+- Include loading states and empty states for better UX
+- Use proper typography scale and vertical rhythm
 
 Deliver:
-- ONLY the complete HTML/CSS/JS (or single {framework} file if applicable).'''
+- ONLY the complete, production-ready {framework} code with inline styles
+- Include all modern design elements: gradients, animations, SVG backgrounds, custom logo
+- Ensure visual impact that stands out from basic templates'''
 
 def landing_prompt(product_description, framework, theme, sections, design_data=None) -> str:
     sections_str = ", ".join(sections) if sections else "hero, features, pricing, footer"
@@ -382,20 +453,42 @@ Strategic Context:
 - Brand Color: {primary_color}
 - UX Patterns: {ux_adopt}"""
 
-    return f'''You are a senior frontend engineer + UX designer.
+    return f'''You are a senior frontend engineer + modern UX designer.
 
-Goal: Build a modern, responsive landing page for: {product_description}
+Goal: Build a stunning, conversion-optimized landing page for: {product_description}
 Framework: {fw}; Theme: {theme}{design_context}
 
-Requirements:
-- Heuristics: large primary CTA (Fitts), simple nav (Hick), clear hierarchy, whitespace.
-- Accessibility: semantic HTML, roles/labels, alt text, WCAG AA.
-- Responsive: mobile-first flex/grid; ~75ch text; 8px spacing.
-- Sections: {sections_str}
-- Content: no lorem ipsum; align to product; concise, benefit-led.
-- Images: placeholder.com or picsum.photos via URLs; descriptive alt.
-- Performance: lazy-load offscreen images; minimize CLS; prefer WebP.
+Modern Design Requirements:
+- **Visual Impact**: Gradient backgrounds, subtle animations, custom SVG patterns, glass morphism
+- **Typography**: Large, bold headings (48px+), proper hierarchy, readable line spacing
+- **Logo & Branding**: Create inline SVG logo matching the product theme
+- **Animations**: Smooth transitions (300ms), hover effects (transform/scale), scroll-triggered animations  
+- **Components**: Interactive cards with shadows, gradient buttons, animated CTAs, form validation
+- **Backgrounds**: Custom SVG patterns, organic shapes, section dividers, geometric elements
+- **Colors**: Rich gradients, proper shadows, depth through layering
+- **Images**: High-quality placeholders, proper aspect ratios, lazy loading
+
+Technical Requirements:
+- **UX Heuristics**: Large CTAs (Fitts), simple nav (Hick), clear hierarchy, generous whitespace
+- **Accessibility**: Semantic HTML, ARIA labels, alt text, WCAG AA contrast (4.5:1)
+- **Responsive**: Mobile-first CSS Grid/Flexbox, fluid typography, touch-friendly targets
+- **Performance**: Lazy-load images, minimize CLS, optimized animations (transform/opacity only)
+- **Modern Standards**: CSS custom properties, ES6+, proper meta tags, schema markup
+
+Content & Structure:
+- **Sections**: {sections_str} (with modern styling and animations)
+- **Copy**: Benefit-focused, conversion-optimized, no lorem ipsum
+- **Images**: Unsplash/Picsum high-quality images with descriptive alt text
+- **CTAs**: Multiple conversion points, A/B tested button styles
+
+Visual Style Guide:
+- Use CSS custom properties for consistent design tokens
+- Implement smooth scroll and focus management
+- Add micro-interactions for better engagement
+- Include loading and empty states
+- Apply proper vertical rhythm and spacing scale
 
 Output:
 - {out}
-- CODE BLOCKS ONLY. No explanations.'''
+- CODE ONLY with all modern design elements integrated
+- Ensure it looks premium and stands out from basic templates'''
