@@ -319,6 +319,7 @@ output_dir: output/landing-page
 - Rich formatting system for progress indicators and status messages
 - Proper error handling with user-friendly messages
 - Thread-safe I/O operations for concurrent processing
+- **Generated Pages**: Use SVG icons or icon libraries instead of emoji characters for professional appearance and accessibility
 
 ### File Structure
 ```
@@ -388,4 +389,5 @@ The tool implements a sophisticated workflow:
    - Responsive design patterns
    - Accessibility compliance (WCAG guidelines)
    - Performance optimizations
+   - SVG icons or icon libraries (Heroicons, Lucide, Feather) instead of emoji characters for professional appearance and cross-platform compatibility
 

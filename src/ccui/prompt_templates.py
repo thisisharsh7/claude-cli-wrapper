@@ -405,6 +405,7 @@ Implementation Rules:
 - Ensure 1.5s first contentful paint
 - Maintain AA accessibility throughout
 - Use system-generated assets where needed
+- Use SVG icons or icon libraries (Heroicons, Lucide, Feather) instead of emoji characters for professional appearance
 - IMPORTANT: When referencing images (reference.jpg, reference_1_*.jpg, etc.), use relative path ../filename.jpg since HTML is in output/landing-page/ but images are in output/
 
 Visual Treatment Guide:
@@ -453,6 +454,7 @@ Technical Requirements:
 - CSS custom properties
 - Responsive images
 - Accessible interactions
+- Use SVG icons or icon libraries (Heroicons, Lucide, Feather) instead of emoji characters for professional appearance
 - IMPORTANT: When referencing images (reference.jpg, reference_1_*.jpg, etc.), use relative path ../filename.jpg since HTML is in output/landing-page/ but images are in output/
 
 CRITICAL: Output ONLY the complete HTML code starting with <!DOCTYPE html>.
