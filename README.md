@@ -1,60 +1,159 @@
+# CCUI — Claude Code UI Generator
 
-# ccui — Claude Code UI Generator (Frontend-only)
-
-A minimal CLI that wraps Claude Code to generate landing pages from a reference URL + product description.  
-**Scope:** frontend only (HTML/Tailwind or React), with UI/UX heuristics baked into the prompt.
+A sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. Leverages Claude AI to implement a comprehensive 12-phase design process used by professional UX agencies.
 
 ## ✨ What it does
-1. Opens a URL with Playwright
-2. Captures a full-page screenshot and DOM snapshot
-3. Builds a high-quality prompt automatically
-4. Calls your Claude Code CLI (no extra model costs)
-5. Saves generated code to `output/landing-page/`
-6. (Optional) Previews locally
+
+1. **Automated Competitive Research**: Discovers 3 competitor websites and design showcases
+2. **Screenshot Analysis**: Captures and analyzes competitor landing pages for design patterns
+3. **Professional Design Process**: 12-phase UX methodology including user research, wireframing, and visual design
+4. **Strategic Copy Generation**: Creates conversion-optimized copy based on competitive analysis
+5. **Code Generation**: Outputs production-ready HTML or React components with TailwindCSS styling
+6. **Section Management**: Regenerate specific sections or change themes without rebuilding
 
 ## 🧰 Prerequisites
-- Python 3.9+
-- Claude Code CLI installed and working (e.g., a `claude` command)
-- macOS/Linux/WSL is fine
-- Chrome is *not* required (uses Playwright Chromium)
 
-## 🚀 Step-by-step Setup
+- Python 3.9 or higher
+- Claude CLI tool installed and configured
+- macOS/Linux/Windows (WSL recommended for Windows)
+
+## 🚀 Setup and Installation
 
 ```bash
-# 1) Create & activate a virtualenv
+# 1. Create and activate virtual environment
 python -m venv .venv
-source .venv/bin/activate  # on Windows: .venv\Scripts\activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# 2) Install this package (editable) + dependencies
+# 2. Install package in development mode
 pip install -e .
 
-# 3) Install Playwright browsers
+# 3. Initialize Playwright browsers (required for screenshot capture)
 ccui init
 
-# 4) Generate a landing page inspired by a URL
-ccui gen --url https://www.creatorscope.com --desc "Access The Power Of Micro-Creators Safely.The most advanced micro-influencer prospecting platform"
-
-# 5) Preview locally (pick one)
-python -m http.server -d output/landing-page 3000
-# or if you have node:
-# npx serve output/landing-page -p 3000
+# 4. Generate your first landing page
+ccui gen --desc "AI-powered project management tool"
 ```
 
-## 🧪 Example
+## 📋 Commands
+
+### `ccui init`
+Initialize CCUI by installing Playwright browsers.
+
+**Usage:** `ccui init`
+
+**Example:**
 ```bash
-ccui gen --url https://stripe.com --desc "Crypto payroll platform for startups"
+ccui init
 ```
 
-## ⚙️ Commands
-- `ccui init` — installs Playwright browsers
-- `ccui gen --url <URL> --desc "<product description>" [--framework html|react] [--theme minimal|brutalist|playful] [--sections hero,features,pricing,footer] [--claude-cmd claude]`
+---
 
-## 📝 Configure (optional)
-You can create a `ccui.yaml` in the current directory:
+### `ccui gen`
+Generate a conversion-optimized landing page using AI-powered design thinking.
+
+**Usage:** `ccui gen [OPTIONS]`
+
+**Options:**
+- `--desc, -d TEXT`: Product description
+- `--desc-file FILE`: Load description from text file
+- `--url, -u URL`: Reference URLs (can use multiple times, max 3)
+- `--framework, -f [html|react]`: Output framework (default: html)
+- `--theme, -t [minimal|brutalist|playful|corporate]`: Design theme (default: minimal)
+- `--no-design-thinking`: Skip design thinking for faster generation
+- `--output, -o DIR`: Output directory
+
+**Examples:**
+```bash
+# Interactive mode (recommended)
+ccui gen
+
+# Quick generation without design thinking
+ccui gen --desc "AI project management tool" --no-design-thinking
+
+# Full analysis with custom references and theme
+ccui gen --url https://linear.app --desc "Project management tool" --theme brutalist
+
+# Load from file with React output
+ccui gen --desc-file product_desc.txt --framework react --theme corporate
+```
+
+---
+
+### `ccui regen`
+Regenerate specific sections of an existing landing page.
+
+**Usage:** `ccui regen [OPTIONS]`
+
+**Options:**
+- `--section, -s TEXT`: Sections to regenerate (comma-separated)
+- `--all`: Regenerate all sections
+- `--desc, -d TEXT`: Product description
+- `--file, -f FILE`: Path to landing page file
+- `--output, -o DIR`: Output directory
+
+**Examples:**
+```bash
+# Regenerate hero section
+ccui regen --section hero
+
+# Regenerate multiple sections
+ccui regen --section hero,features,pricing
+
+# Regenerate all sections
+ccui regen --all
+```
+
+---
+
+### `ccui theme`
+Change the design theme of an existing landing page.
+
+**Usage:** `ccui theme THEME [OPTIONS]`
+
+**Options:**
+- `--file, -f FILE`: Path to landing page file
+- `--output, -o DIR`: Output directory
+
+**Examples:**
+```bash
+# Change to brutalist theme
+ccui theme brutalist
+
+# Change theme for specific file
+ccui theme playful --file custom/page.html
+```
+
+---
+
+### `ccui version`
+Show version information.
+
+**Usage:** `ccui version`
+
+**Example:**
+```bash
+ccui version
+```
+
+## 🎨 Themes
+
+- `minimal`: Clean, minimal design with subtle styling
+- `brutalist`: Bold, high-contrast design with strong visual elements
+- `playful`: Colorful, engaging design with rounded elements
+- `corporate`: Professional, business-focused design
+
+## 🛠️ Frameworks
+
+- `html`: Single HTML file with inline TailwindCSS (default)
+- `react`: React component with ESM imports
+
+## ⚙️ Configuration
+
+Create optional `ccui.yaml` in your working directory:
 
 ```yaml
 framework: html    # html or react
-theme: minimal
+theme: minimal     # minimal|brutalist|playful|corporate
 sections: [hero, features, pricing, footer]
 claude_cmd: claude
 output_dir: output/landing-page
@@ -62,10 +161,55 @@ output_dir: output/landing-page
 
 CLI flags always override config values.
 
+## 🔬 Design Thinking Process
+
+When not using `--no-design-thinking`, CCUI implements a 12-phase professional UX methodology:
+
+1. **Reference Discovery** - Auto-finds competitors using Claude AI
+2. **Screenshot Capture** - Captures competitor landing pages
+3. **Product Understanding** - Analyzes value proposition
+4. **UX Analysis** - Identifies design patterns and opportunities
+5. **User Research** - Creates empathy maps and personas
+6. **Site Flow** - Maps user journeys and information architecture
+7. **Content Strategy** - Develops strategic messaging
+8. **Wireframing** - Validates mobile-first layouts
+9. **Design System** - Creates typography, colors, and components
+10. **High-Fidelity Design** - Adds interactive elements and polish
+11. **Copy Generation** - Refines conversion-optimized copy
+12. **Implementation** - Generates production-ready code
+
+## 🌐 Preview Generated Pages
+
+```bash
+# Start local server to preview
+python -m http.server -d output/landing-page 3000
+
+# Or with Node.js
+npx serve output/landing-page -p 3000
+
+# Then open http://localhost:3000 in your browser
+```
+
+## 💡 Usage Tips
+
+- **Long Descriptions**: Files >100 words are automatically summarized to optimize processing
+- **Reference Limit**: Maximum 3 reference URLs for optimal performance
+- **Interactive Mode**: Run `ccui gen` without options for guided setup
+- **Section Updates**: Use `ccui regen` to update specific parts without rebuilding
+- **Theme Changes**: Use `ccui theme` to redesign with preserved content
+
 ## 🆘 Troubleshooting
-- If `ccui gen` fails, check:
-  - Is your `claude` CLI installed and accessible on PATH?
-  - Does the URL load without consent gates / blockers?
-  - Try `--framework html` (simpler than React)
 
+- **Claude CLI Issues**: Ensure `claude` command is accessible on PATH
+- **Playwright Errors**: Run `ccui init` to install required browsers
+- **Screenshot Failures**: Tool continues without screenshots if capture fails
+- **Generation Errors**: Try `--no-design-thinking` for simpler processing
+- **Memory Issues**: Tool automatically cleans up between operations
 
+## 🏗️ Architecture
+
+- **CLI Interface**: Typer-based with rich terminal formatting
+- **Web Scraping**: Playwright automation with error handling
+- **AI Integration**: Claude CLI with timeout protection and usage tracking
+- **Output Management**: Structured HTML/React with section markers
+- **Configuration**: YAML-based with CLI override support

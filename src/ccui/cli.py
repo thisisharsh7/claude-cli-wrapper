@@ -231,6 +231,38 @@ def run_claude_with_progress(prompt: str, description: str = "Claude Code is thi
     
     return full_output, usage_stats
 
+def summarize_long_description(desc: str) -> str:
+    """Summarize product description if longer than 100 words"""
+    word_count = len(desc.split())
+    
+    if word_count <= 100:
+        return desc
+    
+    console.print(f"[yellow]📝 Description has {word_count} words, summarizing to 100-150 words...[/yellow]")
+    
+    summarization_prompt = f"""You are given a long product description. 
+If the text is fewer than 100 words, return it unchanged. 
+If it is longer than 100 words, summarize it into 100–150 words while keeping only the most important details:
+
+- Problem it solves
+- Target user
+- Unique differentiator
+- Best feature
+
+Make the summary clear, concise, and business-oriented. 
+Do not include filler or marketing fluff. 
+Output only the final text (no explanations).
+
+Product description to summarize:
+{desc}"""
+    
+    try:
+        summary, _ = run_claude_with_progress(summarization_prompt, "Summarizing description...")
+        return summary.strip()
+    except Exception as e:
+        console.print(f"[yellow]⚠️  Failed to summarize description: {e}. Using original.[/yellow]")
+        return desc
+
 def safe_json_parse(text: str) -> Dict[str, Any]:
     """Safely parse JSON from Claude output"""
     try:
@@ -606,6 +638,10 @@ def gen(
             console.print(f"References: [cyan]{', '.join(urls)}[/cyan]")
         console.print(f"Framework: [cyan]{framework}[/cyan] | Theme: [cyan]{theme}[/cyan]")
         console.print(f"Design thinking: [cyan]{'Yes' if not no_design_thinking else 'No'}[/cyan]\n")
+    
+    # Summarize description if too long
+    if desc:
+        desc = summarize_long_description(desc)
     
     # Override config with CLI arguments
     framework = framework or config.get('framework', 'html')
