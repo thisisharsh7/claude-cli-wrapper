@@ -3,6 +3,14 @@ from textwrap import dedent
 import os
 from typing import List, Tuple, Dict
 
+# Import theme specifications for theme-aware prompts
+try:
+    from .theme_specifications import get_theme_design_system_rules
+except ImportError:
+    # Fallback if theme_specifications not available
+    def get_theme_design_system_rules(theme_name: str) -> str:
+        return f"Generate design system for {theme_name} theme."
+
 def reference_discovery_prompt(desc: str) -> str:
     return f"Given this product: '{desc}', find 3 live product URLs of similar tools. Only list working websites, not blogs. Format: Name – URL – short note."
 
@@ -216,7 +224,7 @@ Output JSON only:
 Rules: Be concise, mobile-first, ensure CTA always visible.'''
 
 
-def design_system_prompt(product_desc, wireframes, content_strategy) -> str:
+def design_system_prompt(product_desc, wireframes, content_strategy, theme: str = "minimal") -> str:
     return f'''Product: {product_desc}
 
 Wireframes:
@@ -299,6 +307,9 @@ Output JSON only:
   }},
   "summary": "..."
 }}
+
+{get_theme_design_system_rules(theme)}
+
 Rules: Modern, animated, gradient-rich, high-contrast, mobile-optimized, includes SVG patterns and logo concept.'''
 
 
@@ -459,26 +470,109 @@ def regeneration_prompt(product_desc, framework, theme, section_list, existing_c
             for k,v in existing_context.items()
         )
     
+    sections_to_generate = "\n".join([f"- {section}" for section in section_list])
+    
+    # Get theme-specific design rules
+    theme_rules = ""
+    if theme == "brutalist":
+        theme_rules = """
+BRUTALIST THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Use ONLY these colors: bg-black, bg-white, bg-red-600, bg-yellow-400
+- Use ONLY these text styles: font-black, font-bold, uppercase, tracking-tight, tracking-wide
+- REQUIRED classes on ALL sections: brutalist-border, brutalist-shadow
+- Typography: JetBrains Mono font (already loaded)
+- NO rounded corners, NO gradients, NO soft shadows
+- Use sharp, geometric layouts with high contrast
+- All buttons MUST have: brutalist-border brutalist-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none
+- All text MUST be UPPERCASE where appropriate
+- Color combinations: black text on white/yellow, white text on black/red"""
+    elif theme == "minimal":
+        theme_rules = """
+MINIMAL THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Use neutral colors: bg-white, bg-gray-50, bg-gray-100, text-gray-900, text-gray-600
+- Typography: font-normal, font-medium, font-semibold (NO font-black)
+- Generous whitespace: py-16, py-24, space-y-8, space-y-12
+- Subtle borders: border border-gray-200, rounded-lg
+- Clean buttons: bg-blue-600, hover:bg-blue-700, rounded-md, px-6 py-3
+- Minimal shadows: shadow-sm, shadow-md
+- Simple layouts with lots of breathing room"""
+    elif theme == "playful":
+        theme_rules = """
+PLAYFUL THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Bright colors: bg-pink-500, bg-purple-500, bg-blue-500, bg-yellow-400, bg-green-500
+- Rounded elements: rounded-xl, rounded-2xl, rounded-full
+- Fun typography: font-bold, font-extrabold
+- Organic shapes and bouncy animations: hover:scale-105, transition-transform
+- Colorful gradients: bg-gradient-to-r from-pink-500 to-purple-500
+- Playful spacing and asymmetrical layouts"""
+    elif theme == "corporate":
+        theme_rules = """
+CORPORATE THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Professional colors: bg-blue-900, bg-gray-800, bg-white, text-blue-900
+- Conservative typography: font-medium, font-semibold
+- Structured layouts: grid system, even spacing
+- Subtle shadows: shadow-lg, shadow-xl
+- Professional buttons: bg-blue-600, hover:bg-blue-700
+- Clean, trustworthy design patterns"""
+    elif theme == "terminal":
+        theme_rules = """
+TERMINAL THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Matrix colors: bg-black, bg-gray-900, text-green-400, text-green-300
+- Monospace font: font-mono (already loaded)
+- Terminal aesthetics: border-green-500, bg-green-500/10
+- Command-line elements: $ prompts, code blocks
+- Pixelated/blocky design: sharp edges, no rounded corners
+- Glowing effects: animate-pulse, text-green-400"""
+    elif theme == "dark":
+        theme_rules = """
+DARK THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Dark backgrounds: bg-gray-900, bg-gray-800, bg-black
+- Light text: text-white, text-gray-100, text-gray-300
+- Dark accent colors: bg-blue-600, bg-purple-600, bg-indigo-600
+- Subtle borders: border-gray-700, border-gray-600
+- High contrast for accessibility"""
+    elif theme == "morphism":
+        theme_rules = """
+MORPHISM THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Soft backgrounds: bg-gray-100, bg-white, bg-gradient-to-br
+- Glass effects: backdrop-blur-sm, bg-white/20, border border-white/20
+- Soft shadows: shadow-xl, shadow-2xl with blur
+- Rounded corners: rounded-xl, rounded-2xl
+- Subtle colors with transparency: bg-blue-500/10, text-gray-700"""
+    else:
+        theme_rules = f"Follow {theme} theme guidelines with appropriate colors and styling"
+    
     return f'''You are a design system specialist refreshing page sections.
 
 Product: {product_desc}
 Sections to update: {", ".join(section_list)}
 Framework: {framework}
+Theme: {theme}
 
 Existing Context:
 {context_analysis or "No specific context provided"}
 
-Regeneration Rules:
-1. Preserve established design tokens
-2. Maintain consistent spacing system
-3. Keep existing interaction patterns
-4. Only introduce new visuals if they:
-   - Solve a specific communication gap
-   - Match the established style
-   - Improve conversion potential
-5. IMPORTANT: When referencing images (reference.jpg, reference_1_*.jpg, etc.), use relative path ../filename.jpg since HTML is in output/landing-page/ but images are in output/
+{theme_rules}
 
-CRITICAL: Output ONLY the complete HTML code starting with <!DOCTYPE html>.
+Generate ONLY the requested sections with proper markers. For each section, use this format:
+
+<!-- START: section_name -->
+<section>
+  ... section content ...
+</section>
+<!-- END: section_name -->
+
+Sections to generate:
+{sections_to_generate}
+
+CRITICAL REGENERATION RULES:
+1. MUST preserve the exact {theme} theme styling - analyze existing sections first
+2. MUST maintain consistent design patterns with other sections
+3. MUST use the same CSS classes and color scheme as existing content
+4. Content can be updated, but design MUST match existing sections perfectly
+5. When referencing images: use relative path ../filename.jpg
+6. NO deviation from established visual patterns
+
+CRITICAL: Output ONLY the HTML sections with START/END markers.
 Do NOT include any explanations, descriptions, or markdown formatting.
-Do NOT write about what you created - just output the raw HTML code.
-Your response should begin immediately with <!DOCTYPE html> and end with </html>.'''
+Do NOT output a complete HTML document - just the requested sections.'''

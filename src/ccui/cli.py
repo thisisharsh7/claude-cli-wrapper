@@ -29,6 +29,13 @@ from rich.prompt import Prompt, Confirm
 from . import __version__
 from .scrape import capture_multiple_references
 from .scrape_simple import capture
+from .theme_specifications import (
+    THEME_SPECIFICATIONS,
+    get_theme_choices,
+    get_theme_description,
+    get_theme_design_system_rules,
+    detect_theme_from_content
+)
 from .prompt_templates import (
     reference_discovery_prompt,
     deep_product_understanding_prompt,
@@ -366,19 +373,21 @@ def extract_page_context(file_path: str) -> Dict[str, Any]:
         }
         
         # Extract sections using markers
-        section_pattern = r'<!-- START: (\w+) -->(.*?)<!-- END: \1 -->'
-        sections = re.findall(section_pattern, content, re.DOTALL)
+        section_patterns = [
+            r'<!-- START: (\w+) -->(.*?)<!-- END: \1 -->',
+            r'<!-- SECTION: (\w+) -->(.*?)<!-- END SECTION: \1 -->'
+        ]
+        
+        sections = []
+        for pattern in section_patterns:
+            found = re.findall(pattern, content, re.DOTALL)
+            sections.extend(found)
         
         for section_name, _ in sections:
             context['sections'].append(section_name)
         
-        # Try to detect theme from classes or comments
-        if 'brutal' in content.lower():
-            context['theme'] = 'brutalist'
-        elif 'playful' in content.lower() or 'rounded-' in content:
-            context['theme'] = 'playful'
-        elif 'corporate' in content.lower():
-            context['theme'] = 'corporate'
+        # Enhanced theme detection using new system
+        context['theme'] = detect_theme_from_content(content)
             
         return context
         
@@ -464,6 +473,7 @@ def replace_sections_in_file(file_path: str, new_sections_content: str, sections
                 # Try multiple patterns to find existing section
                 patterns_to_try = [
                     f'<!-- START: {section_key} -->.*?<!-- END: {section_key} -->',
+                    f'<!-- SECTION: {section_key} -->.*?<!-- END SECTION: {section_key} -->',
                     f'<!-- {section_name.title()} Section -->.*?(?=<!-- .* Section -->|</body>|$)',
                     f'<section[^>]*class="[^"]*{section_key}[^"]*"[^>]*>.*?</section>'
                 ]
@@ -551,7 +561,7 @@ def gen(
     desc_file: Optional[str] = typer.Option(None, "--desc-file", help="Path to file containing product description"),
     urls: Optional[List[str]] = typer.Option(None, "--url", "-u", help="Reference URLs (can be used multiple times)"),
     framework: Optional[str] = typer.Option(None, "--framework", "-f", help="Output framework (html|react)"),
-    theme: Optional[str] = typer.Option(None, "--theme", "-t", help="Design theme (minimal|brutalist|playful|corporate)"),
+    theme: Optional[str] = typer.Option(None, "--theme", "-t", help=f"Design theme ({'/'.join(get_theme_choices())})"),
     no_design_thinking: bool = typer.Option(False, "--no-design-thinking", help="Skip design thinking process"),
     output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory")
 ):
@@ -614,11 +624,16 @@ def gen(
                 default='html'
             )
         
-        # Theme selection
+        # Theme selection with descriptions
         if not theme:
-            theme_choices = ['minimal', 'brutalist', 'playful', 'corporate']
+            theme_choices = get_theme_choices()
+            console.print("\n[bold]Available themes:[/bold]")
+            for i, choice in enumerate(theme_choices, 1):
+                desc = get_theme_description(choice)
+                console.print(f"  {i}. [cyan]{choice}[/cyan]: {desc[:60]}...")
+            
             theme = Prompt.ask(
-                "[bold]Design theme[/bold]",
+                "\n[bold]Select design theme[/bold]",
                 choices=theme_choices,
                 default='minimal'
             )
@@ -651,7 +666,7 @@ def gen(
     
     # Validate inputs
     valid_frameworks = ['html', 'react']
-    valid_themes = ['minimal', 'brutalist', 'playful', 'corporate']
+    valid_themes = get_theme_choices()
     
     if framework not in valid_frameworks:
         console.print(f"[red]❌ Invalid framework. Must be one of: {', '.join(valid_frameworks)}[/red]")
@@ -808,7 +823,7 @@ def gen(
             
             # Phase 9: Design System
             console.print("\n[bold]Phase 9: Design System[/bold]")
-            prompt = design_system_prompt(desc, wireframes, content_strategy)
+            prompt = design_system_prompt(desc, wireframes, content_strategy, theme)
             design_output, _ = run_claude_with_progress(prompt, "Building design system...")
             design_system = safe_json_parse(design_output)
             
@@ -1016,7 +1031,7 @@ def regen(
 
 @app.command()
 def theme(
-    new_theme: str = typer.Argument(..., help="New design theme (minimal|brutalist|playful|corporate)"),
+    new_theme: str = typer.Argument(..., help=f"New design theme ({'/'.join(get_theme_choices())})"),
     file: Optional[str] = typer.Option(None, "--file", "-f", help="Path to landing page file"),
     output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory")
 ):
@@ -1034,9 +1049,13 @@ def theme(
     output_dir = output_dir or config.get('output_dir', 'output/landing-page')
     
     # Validate theme
-    valid_themes = ['minimal', 'brutalist', 'playful', 'corporate']
+    valid_themes = get_theme_choices()
     if new_theme not in valid_themes:
         console.print(f"[red]❌ Invalid theme. Must be one of: {', '.join(valid_themes)}[/red]")
+        console.print("\n[bold]Available themes:[/bold]")
+        for choice in valid_themes:
+            desc = get_theme_description(choice)
+            console.print(f"  [cyan]{choice}[/cyan]: {desc}")
         raise typer.Exit(1)
     
     # Find existing landing page files
@@ -1098,10 +1117,8 @@ def theme(
         
         # Phase 9: Regenerate Design System with new theme
         console.print(f"\n[bold]Phase 9: Design System ({new_theme} theme)[/bold]")
-        prompt = design_system_prompt(product_desc, wireframes, content_strategy)
-        # Add theme context to the prompt
-        themed_prompt = f"{prompt}\n\nIMPORTANT: Generate a {new_theme} themed design system that aligns with the theme characteristics."
-        design_output, _ = run_claude_with_progress(themed_prompt, f"Building {new_theme} design system...")
+        prompt = design_system_prompt(product_desc, wireframes, content_strategy, new_theme)
+        design_output, _ = run_claude_with_progress(prompt, f"Building {new_theme} design system...")
         design_system = safe_json_parse(design_output)
         
         # Phase 10: High-Fidelity Design with new theme

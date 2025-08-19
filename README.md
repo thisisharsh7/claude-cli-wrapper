@@ -58,7 +58,7 @@ Generate a conversion-optimized landing page using AI-powered design thinking.
 - `--desc-file FILE`: Load description from text file
 - `--url, -u URL`: Reference URLs (can use multiple times, max 3)
 - `--framework, -f [html|react]`: Output framework (default: html)
-- `--theme, -t [minimal|brutalist|playful|corporate]`: Design theme (default: minimal)
+- `--theme, -t [minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated]`: Design theme (default: minimal)
 - `--no-design-thinking`: Skip design thinking for faster generation
 - `--output, -o DIR`: Output directory
 
@@ -137,10 +137,26 @@ ccui version
 
 ## 🎨 Themes
 
-- `minimal`: Clean, minimal design with subtle styling
-- `brutalist`: Bold, high-contrast design with strong visual elements
-- `playful`: Colorful, engaging design with rounded elements
-- `corporate`: Professional, business-focused design
+### Core Themes
+- `minimal`: Clean, content-focused design following Dieter Rams' principles
+- `brutalist`: Raw, honest design inspired by Brutalist architecture
+- `playful`: Joyful, approachable design with organic shapes and vibrant colors
+- `corporate`: Traditional, trustworthy design following business conventions
+
+### Modern Design Theory Themes
+- `morphism`: Soft, tactile design combining neumorphism and glassmorphism
+- `animated`: Motion-first design where animation drives user experience
+- `terminal`: CLI-inspired aesthetic for developers and tech enthusiasts
+- `aesthetic`: Retro-futuristic Y2K, vaporwave, and cyber aesthetics
+
+### Additional Theme Options
+- `dark`: Modern dark theme optimized for contrast and reduced eye strain
+- `vibrant`: Colorful, dopamine-rich design that energizes user interactions
+- `sustainable`: Nature-inspired design emphasizing eco-conscious branding
+- `data`: Information-dense design optimized for dashboards and analytics
+- `illustrated`: Hand-drawn, custom illustration-driven design for humanized experiences
+
+📖 **See [THEME_IMPLEMENTATION_GUIDE.md](THEME_IMPLEMENTATION_GUIDE.md) for detailed specifications and usage guidelines**
 
 ## 🛠️ Frameworks
 
@@ -153,7 +169,7 @@ Create optional `ccui.yaml` in your working directory:
 
 ```yaml
 framework: html    # html or react
-theme: minimal     # minimal|brutalist|playful|corporate
+theme: minimal     # minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated
 sections: [hero, features, pricing, footer]
 claude_cmd: claude
 output_dir: output/landing-page

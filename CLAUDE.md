@@ -62,7 +62,7 @@ ccui gen [OPTIONS]
 - `--desc-file FILE`: Path to file containing product description
 - `--url, -u URL`: Reference URLs (can be used multiple times, max 3)
 - `--framework, -f [html|react]`: Output framework (default: html)
-- `--theme, -t [minimal|brutalist|playful|corporate]`: Design theme (default: minimal)
+- `--theme, -t [minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated]`: Design theme (default: minimal)
 - `--no-design-thinking`: Skip full design thinking process for faster generation
 - `--output, -o DIR`: Output directory (default: output/landing-page)
 
@@ -84,6 +84,19 @@ ccui gen --desc-file product_desc.txt --url https://strapi.io --url https://disc
 
 # React output with corporate theme
 ccui gen --desc "SaaS platform" --framework react --theme corporate
+
+# New modern themes
+ccui gen --desc "Design portfolio" --theme morphism
+ccui gen --desc "Developer tools" --theme terminal
+ccui gen --desc "Interactive story" --theme animated
+ccui gen --desc "Music platform" --theme aesthetic
+
+# Additional theme examples
+ccui gen --desc "Developer tools" --theme dark
+ccui gen --desc "Marketing campaign" --theme vibrant
+ccui gen --desc "Eco-friendly products" --theme sustainable
+ccui gen --desc "Analytics dashboard" --theme data
+ccui gen --desc "Educational platform" --theme illustrated
 ```
 
 **Comprehensive Analysis (Default):**
@@ -141,7 +154,7 @@ ccui theme THEME [OPTIONS]
 ```
 
 **Arguments:**
-- `THEME`: New design theme (minimal|brutalist|playful|corporate)
+- `THEME`: New design theme (minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated)
 
 **Options:**
 - `--file, -f FILE`: Path to landing page file
@@ -157,6 +170,19 @@ ccui theme playful --file custom/page.html
 
 # Change to corporate theme
 ccui theme corporate
+
+# New modern themes
+ccui theme morphism --file portfolio.html
+ccui theme terminal --file dev-tools.html
+ccui theme animated --file interactive-story.html
+ccui theme aesthetic --file music-site.html
+
+# Additional theme examples
+ccui theme dark --file developer-app.html
+ccui theme vibrant --file marketing-site.html
+ccui theme sustainable --file eco-brand.html
+ccui theme data --file analytics-dashboard.html
+ccui theme illustrated --file education-platform.html
 ```
 
 **Note:** Requires a landing page generated with full design thinking process (not `--no-design-thinking`).
@@ -196,10 +222,27 @@ The tool implements a comprehensive 12-phase design process when not using `--no
 ## Configuration
 
 ### Available Themes
-- `minimal`: Clean, minimal design with subtle styling
-- `brutalist`: Bold, high-contrast design with strong visual elements
-- `playful`: Colorful, engaging design with rounded elements
-- `corporate`: Professional, business-focused design
+
+#### Core Themes
+- `minimal`: Clean, content-focused design following Dieter Rams' principles of good design
+- `brutalist`: Raw, honest design inspired by Brutalist architecture - bold and uncompromising
+- `playful`: Joyful, approachable design using organic shapes and vibrant colors
+- `corporate`: Traditional, trustworthy design following established business conventions
+
+#### Modern Design Theory Themes
+- `morphism`: Soft, tactile design combining neumorphism and glassmorphism principles
+- `animated`: Motion-first design where animation drives user experience and storytelling
+- `terminal`: Monospace, CLI-inspired aesthetic appealing to developers and tech enthusiasts
+- `aesthetic`: Retro-futuristic design drawing from Y2K, vaporwave, and cyber aesthetics
+
+#### Additional Theme Options
+- `dark`: Modern dark theme optimized for contrast and reduced eye strain
+- `vibrant`: Colorful, dopamine-rich design that energizes user interactions
+- `sustainable`: Nature-inspired design emphasizing eco-conscious branding
+- `data`: Information-dense design optimized for dashboards and analytics
+- `illustrated`: Hand-drawn, custom illustration-driven design for humanized experiences
+
+**For detailed theme specifications, use cases, and implementation guidelines, see [THEME_IMPLEMENTATION_GUIDE.md](THEME_IMPLEMENTATION_GUIDE.md)**
 
 ### Available Frameworks
 - `html`: Single HTML file with inline TailwindCSS (default)
@@ -210,7 +253,7 @@ Create `ccui.yaml` in your working directory:
 
 ```yaml
 framework: html    # html or react
-theme: minimal     # minimal|brutalist|playful|corporate
+theme: minimal     # minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated
 sections: [hero, features, pricing, footer]
 claude_cmd: claude
 output_dir: output/landing-page
@@ -345,3 +388,4 @@ The tool implements a sophisticated workflow:
    - Responsive design patterns
    - Accessibility compliance (WCAG guidelines)
    - Performance optimizations
+
