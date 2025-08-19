@@ -20,307 +20,303 @@ class ThemeSpec:
 
 # Enhanced Theme System based on Modern Design Theory
 THEME_SPECIFICATIONS = {
-    
-    # EXISTING THEMES (Enhanced)
     "minimal": ThemeSpec(
         name="Minimal",
-        description="Clean, content-focused design following Dieter Rams' principles of good design",
+        description="Clean, content-focused design rooted in Dieter Rams' principles of clarity and function.",
         use_cases=[
-            "B2B SaaS platforms", 
-            "Professional services", 
+            "B2B SaaS platforms",
+            "Professional services",
             "Documentation sites",
             "Portfolio websites"
         ],
-        target_audience="Professional users who value efficiency and clarity",
-        design_philosophy="Less but better - eliminate visual noise to focus on content and functionality",
+        target_audience="Efficiency-driven professionals who value clarity over decoration",
+        design_philosophy="Less but better – eliminate non-essential elements, elevate hierarchy",
         visual_characteristics={
-            "color_palette": "Monochromatic with single accent color",
-            "typography": "Sans-serif, high readability (Inter, System fonts)",
-            "spacing": "Generous whitespace, 8px grid system",
-            "components": "Flat design, subtle borders, minimal shadows",
-            "interactions": "Subtle hover states, no exaggerated animations",
-            "layout": "Grid-based, plenty of breathing room"
+            "color_palette": "Neutral monochrome with restrained single accent",
+            "typography": "System and modern sans-serif (Inter, SF Pro) for legibility",
+            "spacing": "Generous whitespace, strict 8pt grid rhythm",
+            "components": "Flat surfaces, hairline borders, subtle elevation (no skeuomorphism)",
+            "interactions": "Micro-hover cues, restrained transitions (opacity/fade only)",
+            "layout": "Grid-first, wide margins, plenty of negative space"
         },
-        accessibility_priority="AAA compliance - highest readability standards",
-        implementation_notes="Focus on typography hierarchy, use system fonts, avoid decorative elements"
+        accessibility_priority="AAA target – strict readability and contrast across breakpoints",
+        implementation_notes="Use fluid type scales, responsive whitespace, avoid decorative overload"
     ),
-    
+
     "brutalist": ThemeSpec(
         name="Brutalist",
-        description="Raw, honest design inspired by Brutalist architecture - bold and uncompromising",
+        description="Raw, bold design inspired by Brutalist architecture – uncompromising and experimental.",
         use_cases=[
             "Creative agencies",
-            "Art portfolios", 
+            "Art portfolios",
             "Experimental products",
             "Bold brand statements"
         ],
-        target_audience="Design-forward users who appreciate bold, unconventional aesthetics",
-        design_philosophy="Raw materials, honest construction, bold geometric forms",
+        target_audience="Design-forward users seeking unconventional, striking aesthetics",
+        design_philosophy="Raw materials, geometric intensity, deliberate visual discomfort",
         visual_characteristics={
-            "color_palette": "High contrast, monochrome with bold accent",
-            "typography": "Bold sans-serif, chunky fonts (Helvetica Bold, Arial Black)",
-            "spacing": "Tight spacing, overlapping elements, asymmetrical layouts",
-            "components": "Sharp edges, no rounded corners, heavy borders",
-            "interactions": "Abrupt state changes, no easing animations",
-            "layout": "Asymmetrical, overlapping sections, raw grid breaks"
+            "color_palette": "High-contrast black/white with primary or neon accent",
+            "typography": "Heavy sans-serif (Helvetica Bold, Arial Black)",
+            "spacing": "Dense, overlapping, deliberate grid breaks",
+            "components": "Hard edges, thick borders, no rounded corners",
+            "interactions": "Abrupt state changes, instant feedback (no easing)",
+            "layout": "Asymmetrical, overlapping blocks, raw visual stacking"
         },
-        accessibility_priority="AA compliance with high contrast ratios",
+        accessibility_priority="AA target – maintain legibility despite high-contrast extremes",
         implementation_notes="Use system fonts at heavy weights, avoid gradients, embrace harsh edges"
     ),
-    
+
     "playful": ThemeSpec(
         name="Playful",
-        description="Joyful, approachable design using organic shapes and vibrant colors",
+        description="Joyful, approachable design with vibrant colors and organic forms.",
         use_cases=[
             "Consumer apps",
             "Children's products",
             "Entertainment platforms",
             "Creative tools"
         ],
-        target_audience="General consumers seeking delightful, engaging experiences",
-        design_philosophy="Design should spark joy and create emotional connections",
+        target_audience="Consumers seeking delight, warmth, and engaging experiences",
+        design_philosophy="Design should spark joy and emotional connection through whimsy",
         visual_characteristics={
-            "color_palette": "Bright, saturated colors with rainbow gradients",
-            "typography": "Rounded fonts, varied weights (Circular, Nunito)",
-            "spacing": "Organic spacing, playful asymmetry",
-            "components": "Rounded corners, soft shadows, gradient backgrounds",
-            "interactions": "Bouncy animations, micro-interactions, spring physics",
-            "layout": "Flowing, organic shapes, circular elements"
+            "color_palette": "Bright, saturated primaries with multi-color gradients",
+            "typography": "Rounded sans (Circular, Nunito) with playful weight variations",
+            "spacing": "Organic spacing, non-uniform padding",
+            "components": "Rounded corners, gradient fills, soft shadows",
+            "interactions": "Bouncy micro-animations, spring physics",
+            "layout": "Fluid, circular and curved motifs"
         },
-        accessibility_priority="AA compliance with careful color contrast management",
-        implementation_notes="Use CSS custom properties for color variations, implement spring animations"
+        accessibility_priority="AA target – careful management of bright color contrast",
+        implementation_notes="Use CSS custom properties for color variations, implement spring-based motion"
     ),
-    
+
     "corporate": ThemeSpec(
         name="Corporate",
-        description="Traditional, trustworthy design following established business conventions",
+        description="Trust-focused design using established business conventions and conservative styling.",
         use_cases=[
             "Financial services",
             "Healthcare",
             "Government",
             "Enterprise software"
         ],
-        target_audience="Business professionals requiring trust and reliability signals",
-        design_philosophy="Established patterns that convey competence and trustworthiness",
+        target_audience="Business professionals who require signals of reliability and authority",
+        design_philosophy="Familiar patterns that convey competence, hierarchy, and trust",
         visual_characteristics={
-            "color_palette": "Blue-based, conservative palette",
-            "typography": "Traditional serif/sans combinations (Georgia, Arial)",
-            "spacing": "Structured grid, consistent margins",
-            "components": "Traditional buttons, formal layouts, subtle shadows",
-            "interactions": "Conservative animations, predictable patterns",
-            "layout": "Hierarchical, left-to-right reading flow"
+            "color_palette": "Blue-dominant, conservative secondary palette",
+            "typography": "Serif + sans pairings (Georgia, Arial)",
+            "spacing": "Consistent grid, proportional margins",
+            "components": "Conventional buttons, structured form layouts",
+            "interactions": "Predictable, subtle transitions",
+            "layout": "Formal hierarchy, left-to-right reading emphasis"
         },
-        accessibility_priority="WCAG 2.1 AA compliance minimum",
-        implementation_notes="Use established UI patterns, avoid experimental layouts"
+        accessibility_priority="AA compliance minimum across corporate branding colors",
+        implementation_notes="Follow established UI patterns, prioritize clarity over novelty"
     ),
-    
-    # NEW THEMES (Based on Modern Design Theory)
+
     "morphism": ThemeSpec(
         name="Morphism",
-        description="Soft, tactile design combining neumorphism and glassmorphism principles",
+        description="Soft, tactile UI blending neumorphism and glassmorphism principles.",
         use_cases=[
             "Mobile apps",
             "Design portfolios",
             "Premium products",
             "UI/UX showcases"
         ],
-        target_audience="Design enthusiasts and users of premium digital products",
-        design_philosophy="Skeuomorphic elements that feel tangible in digital space",
+        target_audience="Design enthusiasts and premium product users",
+        design_philosophy="Digital tactility – UI elements that appear touchable and layered",
         visual_characteristics={
-            "color_palette": "Soft, muted backgrounds with subtle color shifts",
-            "typography": "Soft, rounded fonts (SF Pro, Poppins)",
-            "spacing": "Generous padding for tactile feel",
-            "components": "Inset/outset shadows, glass effects, soft borders",
-            "interactions": "Pressure-sensitive animations, depth changes",
-            "layout": "Layered depth, floating elements"
+            "color_palette": "Muted pastels with depth gradients",
+            "typography": "Rounded sans (SF Pro, Poppins)",
+            "spacing": "Generous padding for tactile touch targets",
+            "components": "Inset/outset shadows, frosted glass backgrounds",
+            "interactions": "Depth-shift on press, soft scaling",
+            "layout": "Layered elements floating in depth"
         },
-        accessibility_priority="AA compliance with careful contrast on glass elements",
-        implementation_notes="Multiple box-shadows for depth, backdrop-filter for glass effects, avoid overuse"
+        accessibility_priority="AA target – ensure glass overlays maintain readable contrast",
+        implementation_notes="Use multi-layer box-shadows, CSS backdrop-filter, avoid overuse of blur"
     ),
-    
+
     "animated": ThemeSpec(
         name="Animated",
-        description="Motion-first design where animation drives user experience and storytelling",
+        description="Motion-first design where animation drives narrative and engagement.",
         use_cases=[
             "Interactive storytelling",
             "Product launches",
             "Creative portfolios",
             "Brand experiences"
         ],
-        target_audience="Users seeking engaging, immersive digital experiences",
-        design_philosophy="Motion as a design material - guiding attention and creating narrative",
+        target_audience="Users seeking immersive, dynamic digital experiences",
+        design_philosophy="Motion as primary design material – guiding attention and storytelling",
         visual_characteristics={
-            "color_palette": "Dynamic colors that change with interactions",
-            "typography": "Fonts that support animation (Variable fonts, Web fonts)",
-            "spacing": "Fluid spacing that adapts to motion",
-            "components": "Elements designed for transformation",
-            "interactions": "Choreographed animations, gesture-based interactions",
-            "layout": "Scenes that transform based on scroll/interaction"
+            "color_palette": "Dynamic, adaptive colors shifting with user input",
+            "typography": "Variable and web fonts optimized for motion",
+            "spacing": "Fluid spacing responsive to animations",
+            "components": "Transformable, stateful UI blocks",
+            "interactions": "Scroll-triggered scenes, choreographed transitions",
+            "layout": "Scene-based transformations instead of static layouts"
         },
-        accessibility_priority="AA compliance with respect for prefers-reduced-motion",
-        implementation_notes="Use CSS animations and transforms, implement proper motion preferences, optimize for performance"
+        accessibility_priority="AA target – respect prefers-reduced-motion for accessibility",
+        implementation_notes="Use CSS/JS motion frameworks, optimize for GPU performance, support motion toggles"
     ),
-    
+
     "terminal": ThemeSpec(
         name="Terminal",
-        description="Monospace, CLI-inspired aesthetic appealing to developers and tech enthusiasts",
+        description="CLI-inspired design with monospace typography and retro computing aesthetics.",
         use_cases=[
             "Developer tools",
             "Technical documentation",
             "API platforms",
             "Hacker/security tools"
         ],
-        target_audience="Developers, system administrators, tech-savvy users",
-        design_philosophy="Embrace the aesthetic of command-line interfaces and terminal applications",
+        target_audience="Developers, sysadmins, and tech-savvy audiences",
+        design_philosophy="Lean into the nostalgia and efficiency of terminal interfaces",
         visual_characteristics={
-            "color_palette": "Terminal colors: green/amber text on dark backgrounds",
-            "typography": "Monospace fonts only (Fira Code, JetBrains Mono)",
-            "spacing": "Character-grid based spacing",
-            "components": "ASCII art elements, code-block styling",
-            "interactions": "Typewriter animations, cursor blinking effects",
-            "layout": "Terminal window metaphors, fixed-width layouts"
+            "color_palette": "Dark background with neon green/amber text",
+            "typography": "Strict monospace (Fira Code, JetBrains Mono)",
+            "spacing": "Character-grid spacing (ch units)",
+            "components": "ASCII-art, code block metaphors",
+            "interactions": "Typewriter effects, blinking cursors",
+            "layout": "Terminal-window inspired fixed-width layouts"
         },
-        accessibility_priority="High contrast mode support, screen reader optimization",
-        implementation_notes="Use CSS ch units for spacing, implement typewriter effects, include ASCII art"
+        accessibility_priority="High-contrast defaults, screen reader-friendly semantics",
+        implementation_notes="Use CSS ch units for grid, typewriter animations, support ASCII visuals"
     ),
-    
+
     "aesthetic": ThemeSpec(
         name="Aesthetic",
-        description="Retro-futuristic design drawing from Y2K, vaporwave, and cyber aesthetics",
+        description="Retro-futuristic design blending Y2K, vaporwave, and cyber nostalgia with modern UX.",
         use_cases=[
             "Creative platforms",
-            "Music/entertainment",
+            "Music & entertainment",
             "Fashion brands",
             "Art communities"
         ],
-        target_audience="Gen Z and millennial users interested in nostalgic digital culture",
-        design_philosophy="Nostalgic digital aesthetics reimagined for modern interfaces with modern usability standards",
+        target_audience="Gen Z and millennials drawn to digital nostalgia and cyberculture",
+        design_philosophy="Reinterpret nostalgic aesthetics with usability-focused design",
         visual_characteristics={
-            "color_palette": "Dark base (navy/black) with bright neon accents (cyan, magenta, electric blue) for high contrast",
-            "typography": "Retro futuristic fonts with excellent readability - white/cyan text on dark backgrounds",
-            "spacing": "Modern grid with retro visual elements, generous padding for readability",
-            "components": "Neon-outlined components on dark backgrounds, high-contrast interactive states",
-            "interactions": "Subtle neon glow effects that enhance rather than reduce readability",
-            "layout": "Dark theme with bright accent colors, ensure 4.5:1 minimum contrast ratio"
+            "color_palette": "Dark navy/black with neon accents (cyan, magenta, electric blue)",
+            "typography": "Retro-inspired but legible fonts (bold sans with neon glow)",
+            "spacing": "Structured grid softened with retro visuals",
+            "components": "Outlined neon UI, glowing buttons",
+            "interactions": "Subtle neon glows, hover pulses",
+            "layout": "Dark theme with vibrant accent-driven hierarchy"
         },
-        accessibility_priority="WCAG AA compliance with high contrast ratios - all text must meet 4.5:1 contrast minimum",
-        implementation_notes="CRITICAL: Use dark backgrounds (rgb(15,23,42) or darker) with bright neon text. Never use light backgrounds with light text. Test all color combinations for WCAG compliance. Neon effects should be additive, not replacing proper contrast."
+        accessibility_priority="AA target – maintain 4.5:1 contrast despite neon styling",
+        implementation_notes="Always test neon contrasts on dark, ensure glow effects never replace contrast"
     ),
-    
-    # ADDITIONAL THEMES
+
     "dark": ThemeSpec(
         name="Dark",
-        description="Modern dark theme optimized for contrast and reduced eye strain",
+        description="Modern dark theme optimized for reduced eye strain and immersive focus.",
         use_cases=[
             "Developer tools",
             "Creative portfolios",
             "Entertainment platforms",
             "Productivity apps"
         ],
-        target_audience="Night-owl users, developers, gamers, and professionals",
-        design_philosophy="Focus on content with reduced luminance for comfort and contrast",
+        target_audience="Night users, developers, gamers, and professionals",
+        design_philosophy="Focus attention on content by minimizing luminance and maximizing contrast",
         visual_characteristics={
-            "color_palette": "Dark grays and blacks with bright accent colors (teal, purple, green)",
-            "typography": "Sans-serif fonts with high readability (Inter, Roboto)",
-            "spacing": "Balanced spacing to maintain clarity in dark backgrounds",
-            "components": "High-contrast buttons, glowing outlines, subtle elevation",
-            "interactions": "Smooth transitions, glowing hover effects",
-            "layout": "Dark surfaces with accent highlights"
+            "color_palette": "Deep grays/blacks with sharp accent colors (teal, purple, green)",
+            "typography": "Readable sans (Inter, Roboto)",
+            "spacing": "Balanced negative space for readability on dark",
+            "components": "High-contrast CTAs, glowing outlines, subtle shadows",
+            "interactions": "Smooth fades, glow hover states",
+            "layout": "Content-forward with accent highlights"
         },
-        accessibility_priority="WCAG AA - focus on 4.5:1 contrast minimum",
-        implementation_notes="Always test color contrast, avoid low-contrast grays on dark backgrounds"
+        accessibility_priority="AA target – maintain 4.5:1 contrast minimum",
+        implementation_notes="Avoid mid-gray on dark, validate all text/background ratios"
     ),
 
     "vibrant": ThemeSpec(
         name="Vibrant",
-        description="Colorful, dopamine-rich design that energizes user interactions",
+        description="High-energy theme using bold colors and gradients to energize interactions.",
         use_cases=[
             "Marketing websites",
             "Consumer products",
             "Music apps",
             "Startups"
         ],
-        target_audience="Younger audiences, casual consumers, users seeking fun experiences",
-        design_philosophy="Bright, bold colors that evoke excitement and energy",
+        target_audience="Younger, casual users who seek stimulation and excitement",
+        design_philosophy="Color as emotion – bold hues designed to energize and engage",
         visual_characteristics={
-            "color_palette": "Dopamine-boosting gradients (purple-pink, orange-teal)",
-            "typography": "Bold, expressive fonts (Montserrat, Gilroy)",
-            "spacing": "Dynamic spacing with asymmetry for energy",
-            "components": "Colorful buttons, gradient backgrounds, shadow pops",
-            "interactions": "Animated gradients, hover glows, micro-motions",
-            "layout": "Hero-first layouts with bold CTA focus"
+            "color_palette": "Dopamine-rich gradients (purple-pink, orange-teal)",
+            "typography": "Expressive, bold sans (Montserrat, Gilroy)",
+            "spacing": "Dynamic asymmetry with active negative space",
+            "components": "Gradient-filled CTAs, shadow pops",
+            "interactions": "Gradient shifts, hover glows, micro-transitions",
+            "layout": "Hero-first design with strong CTA emphasis"
         },
-        accessibility_priority="AA compliance with careful balance of bright colors",
-        implementation_notes="Use CSS gradients, avoid oversaturation, test text over gradients"
+        accessibility_priority="AA target – ensure text legibility over bright backgrounds",
+        implementation_notes="Validate gradient legibility, avoid oversaturation, layer dark overlays when needed"
     ),
 
     "sustainable": ThemeSpec(
         name="Sustainable",
-        description="Nature-inspired design emphasizing eco-conscious branding",
+        description="Nature-inspired design using earth tones and calm layouts for eco-conscious branding.",
         use_cases=[
             "Environmental organizations",
             "Eco-products",
             "Sustainable brands",
             "Wellness platforms"
         ],
-        target_audience="Eco-conscious consumers and businesses promoting sustainability",
-        design_philosophy="Natural, calm aesthetics that convey environmental awareness",
+        target_audience="Eco-conscious consumers and brands prioritizing sustainability",
+        design_philosophy="Calm, grounded design that reflects environmental values",
         visual_characteristics={
-            "color_palette": "Greens, browns, muted earth tones",
-            "typography": "Clean, organic fonts (Lora, Poppins)",
-            "spacing": "Ample whitespace for calm, airy layouts",
-            "components": "Soft corners, natural textures, leaf-like motifs",
-            "interactions": "Gentle fades, smooth transitions, nature-inspired patterns",
-            "layout": "Grounded, natural hierarchy with open layouts"
+            "color_palette": "Greens, browns, and muted naturals",
+            "typography": "Organic, humanist fonts (Lora, Poppins)",
+            "spacing": "Generous whitespace for light, airy feel",
+            "components": "Soft corners, textures, nature-inspired motifs",
+            "interactions": "Smooth fades, natural flow animations",
+            "layout": "Grounded grid with breathing room"
         },
-        accessibility_priority="AA compliance ensuring readability against muted palettes",
-        implementation_notes="Avoid neon greens, prefer muted natural palettes with contrast"
+        accessibility_priority="AA target – ensure muted colors still pass contrast",
+        implementation_notes="Avoid neon greens, prioritize muted natural palettes, always test color contrast"
     ),
 
     "data": ThemeSpec(
         name="Data",
-        description="Information-dense design optimized for dashboards and analytics",
+        description="Dense, information-rich theme designed for analytics and dashboards.",
         use_cases=[
             "Analytics dashboards",
             "Finance apps",
             "Enterprise SaaS",
             "Developer tools"
         ],
-        target_audience="Data-driven professionals, analysts, and technical teams",
-        design_philosophy="Clarity and efficiency in presenting high-density information",
+        target_audience="Analysts, engineers, and decision-makers who need clarity at scale",
+        design_philosophy="Clarity and efficiency in communicating large datasets",
         visual_characteristics={
-            "color_palette": "Blue/gray neutral palettes with strong accent colors for data highlights",
-            "typography": "Readable sans-serif fonts (Roboto, IBM Plex Sans)",
-            "spacing": "Tight grid-based spacing for dense data presentation",
-            "components": "Charts, tables, cards with strong visual hierarchy",
-            "interactions": "Hover tooltips, interactive filtering, sorting transitions",
-            "layout": "Modular grid layouts optimized for data clarity"
+            "color_palette": "Neutral grays with strong accent colors for charts",
+            "typography": "Readable sans (Roboto, IBM Plex Sans)",
+            "spacing": "Tight, grid-aligned spacing for density",
+            "components": "Tables, charts, modular cards",
+            "interactions": "Hover tooltips, interactive filters, smooth sorting",
+            "layout": "Modular grid optimized for scanning data"
         },
-        accessibility_priority="AAA compliance for clarity in dense information",
-        implementation_notes="Ensure chart colors are colorblind-safe, provide text alternatives"
+        accessibility_priority="AAA target – clarity and colorblind-safe palette",
+        implementation_notes="Validate chart colorblind safety, provide text equivalents for visualizations"
     ),
 
     "illustrated": ThemeSpec(
         name="Illustrated",
-        description="Hand-drawn, custom illustration-driven design for humanized experiences",
+        description="Hand-drawn, character-driven design that emphasizes warmth and personality.",
         use_cases=[
             "Creative startups",
             "Onboarding flows",
             "Educational platforms",
             "Community websites"
         ],
-        target_audience="Casual users, students, creative professionals",
-        design_philosophy="Bring warmth and personality through illustration and character",
+        target_audience="Students, casual users, and creative professionals",
+        design_philosophy="Humanize digital experiences with illustration as storytelling",
         visual_characteristics={
-            "color_palette": "Soft pastels with playful accents",
+            "color_palette": "Soft pastels with vibrant accent pops",
             "typography": "Rounded, friendly fonts (Nunito, Quicksand)",
-            "spacing": "Organic spacing with flowing shapes",
-            "components": "Illustration-heavy components, custom icons",
-            "interactions": "Playful micro-interactions, onboarding animations",
-            "layout": "Centered layouts, storytelling through visuals"
+            "spacing": "Organic spacing around illustrations",
+            "components": "Illustration-driven CTAs, custom iconography",
+            "interactions": "Playful onboarding animations, micro-delight",
+            "layout": "Centered, narrative-driven structures"
         },
-        accessibility_priority="AA compliance, careful to not rely on illustrations for meaning",
-        implementation_notes="SVG illustrations should be lightweight, use Lottie for animations"
+        accessibility_priority="AA target – do not rely solely on illustration for meaning",
+        implementation_notes="Use lightweight SVGs, consider Lottie for animated illustrations"
     )
 }
 
