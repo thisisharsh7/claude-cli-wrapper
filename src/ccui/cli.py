@@ -517,7 +517,7 @@ def init():
 def gen(
     desc: Optional[str] = typer.Option(None, "--desc", "-d", help="Product description"),
     desc_file: Optional[str] = typer.Option(None, "--desc-file", help="Path to file containing product description"),
-    url: Optional[str] = typer.Option(None, "--url", "-u", help="Reference URL"),
+    urls: Optional[List[str]] = typer.Option(None, "--url", "-u", help="Reference URLs (can be used multiple times)"),
     framework: Optional[str] = typer.Option(None, "--framework", "-f", help="Output framework (html|react)"),
     theme: Optional[str] = typer.Option(None, "--theme", "-t", help="Design theme (minimal|brutalist|playful|corporate)"),
     no_design_thinking: bool = typer.Option(False, "--no-design-thinking", help="Skip design thinking process"),
@@ -560,15 +560,18 @@ def gen(
             console.print("[red]❌ Product description is required.[/red]")
             raise typer.Exit(1)
         
-        # Optional URL
-        if not url:
+        # Optional URLs
+        if not urls:
             url_input = Prompt.ask(
-                "[bold]Reference URL (optional)[/bold]\nEnter a competitor or inspiration website",
+                "[bold]Reference URLs (optional)[/bold]\nEnter competitor or inspiration websites (comma-separated)",
                 default="",
                 show_default=False
             )
-            if url_input.strip() and url_input.startswith('http'):
-                url = url_input.strip()
+            if url_input.strip():
+                # Split by comma and filter valid URLs
+                url_list = [u.strip() for u in url_input.split(',') if u.strip().startswith('http')]
+                if url_list:
+                    urls = url_list
         
         # Framework selection
         if not framework:
@@ -599,8 +602,8 @@ def gen(
         
         console.print(f"\n[bold green]✅ Configuration complete![/bold green]")
         console.print(f"Product: [cyan]{desc}[/cyan]")
-        if url:
-            console.print(f"Reference: [cyan]{url}[/cyan]")
+        if urls:
+            console.print(f"References: [cyan]{', '.join(urls)}[/cyan]")
         console.print(f"Framework: [cyan]{framework}[/cyan] | Theme: [cyan]{theme}[/cyan]")
         console.print(f"Design thinking: [cyan]{'Yes' if not no_design_thinking else 'No'}[/cyan]\n")
     
@@ -633,8 +636,10 @@ def gen(
         console.print("\n[bold yellow]⚡ Quick generation mode (no design thinking)[/bold yellow]")
         
         screenshot_path = None
-        if url:
+        if urls and len(urls) > 0:
             try:
+                # Use the first URL for simple mode
+                url = urls[0]
                 console.print(f"[bold blue]📸 Capturing reference screenshot from {url}...[/bold blue]")
                 _, screenshot_path = capture(url, output_dir)
             except Exception as e:
@@ -699,9 +704,11 @@ def gen(
                     except:
                         continue
             
-            # Add user-provided URL if available
-            if url:
-                ref_urls.insert(0, url)
+            # Add user-provided URLs if available
+            if urls:
+                # Insert user URLs at the beginning, maintaining order
+                for i, user_url in enumerate(reversed(urls)):
+                    ref_urls.insert(0, user_url)
             
             # Limit to 3 references for performance
             ref_urls = ref_urls[:3]
@@ -969,6 +976,161 @@ def regen(
             
     except Exception as e:
         console.print(f"[red]❌ Error during regeneration: {e}[/red]")
+        raise typer.Exit(1)
+
+@app.command()
+def theme(
+    new_theme: str = typer.Argument(..., help="New design theme (minimal|brutalist|playful|corporate)"),
+    file: Optional[str] = typer.Option(None, "--file", "-f", help="Path to landing page file"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory")
+):
+    """Change the design theme of an existing landing page
+    
+    This command re-runs the design system and implementation phases 
+    while preserving all research and wireframe data from the original generation.
+    
+    Examples:
+      ccui theme brutalist
+      ccui theme playful --file custom/page.html
+    """
+    
+    config = Config()
+    output_dir = output_dir or config.get('output_dir', 'output/landing-page')
+    
+    # Validate theme
+    valid_themes = ['minimal', 'brutalist', 'playful', 'corporate']
+    if new_theme not in valid_themes:
+        console.print(f"[red]❌ Invalid theme. Must be one of: {', '.join(valid_themes)}[/red]")
+        raise typer.Exit(1)
+    
+    # Find existing landing page files
+    if file:
+        if not os.path.exists(file):
+            console.print(f"[red]❌ File not found: {file}[/red]")
+            raise typer.Exit(1)
+        target_file = file
+    else:
+        found_files = find_landing_page_files(output_dir)
+        if not found_files:
+            console.print(f"[red]❌ No landing page files found in {output_dir}[/red]")
+            console.print("Run [bold]ccui gen[/bold] first to create a landing page")
+            raise typer.Exit(1)
+        
+        # Prefer React if both exist, otherwise use what's available
+        if 'react' in found_files:
+            target_file = found_files['react']
+        else:
+            target_file = found_files['html']
+    
+    # Check for design analysis file
+    analysis_file = os.path.join(output_dir, 'design_analysis.json')
+    if not os.path.exists(analysis_file):
+        console.print(f"[red]❌ Design analysis not found: {analysis_file}[/red]")
+        console.print("This command requires a landing page generated with full design thinking process")
+        console.print("Run [bold]ccui gen --desc 'your product'[/bold] without --no-design-thinking flag")
+        raise typer.Exit(1)
+    
+    # Load existing design analysis
+    try:
+        with open(analysis_file, 'r') as f:
+            analysis_data = json.load(f)
+    except Exception as e:
+        console.print(f"[red]❌ Error reading design analysis: {e}[/red]")
+        raise typer.Exit(1)
+    
+    # Extract context from existing file
+    context = extract_page_context(target_file)
+    framework = context['framework']
+    current_theme = context['theme']
+    
+    console.print(f"[bold blue]🎨 Changing theme from {current_theme} to {new_theme}[/bold blue]")
+    console.print(f"Target file: [cyan]{target_file}[/cyan]")
+    console.print(f"Framework: [green]{framework}[/green]")
+    
+    # Get product description from analysis
+    product_desc = analysis_data.get('product_understanding', {}).get('problem', 'Landing page product')
+    if len(product_desc) > 100:
+        product_desc = product_desc[:100] + "..."
+    
+    console.print(f"Product: [cyan]{product_desc}[/cyan]")
+    
+    try:
+        # Get required data from previous phases
+        content_strategy = analysis_data.get('content_strategy', {})
+        wireframes = analysis_data.get('wireframes', {})
+        user_research = analysis_data.get('user_research', {})
+        
+        # Phase 9: Regenerate Design System with new theme
+        console.print(f"\n[bold]Phase 9: Design System ({new_theme} theme)[/bold]")
+        prompt = design_system_prompt(product_desc, wireframes, content_strategy)
+        # Add theme context to the prompt
+        themed_prompt = f"{prompt}\n\nIMPORTANT: Generate a {new_theme} themed design system that aligns with the theme characteristics."
+        design_output, _ = run_claude_with_progress(themed_prompt, f"Building {new_theme} design system...")
+        design_system = safe_json_parse(design_output)
+        
+        # Phase 10: High-Fidelity Design with new theme
+        console.print(f"\n[bold]Phase 10: High-Fidelity Design ({new_theme} theme)[/bold]")
+        prompt = high_fidelity_design_prompt(product_desc, design_system, wireframes, content_strategy)
+        hifi_output, _ = run_claude_with_progress(prompt, f"Creating {new_theme} high-fidelity design...")
+        hifi_design = safe_json_parse(hifi_output)
+        
+        # Phase 11: Keep existing copy (no need to regenerate)
+        final_copy = analysis_data.get('final_copy', {})
+        
+        # Phase 12: Implementation with new theme
+        console.print(f"\n[bold]Phase 12: Code Implementation ({new_theme} theme)[/bold]")
+        design_data = {
+            'design_system': design_system,
+            'ux_analysis': analysis_data.get('ux_analysis', {}),
+            'wireframes': wireframes,
+            'content_strategy': content_strategy
+        }
+        prompt = implementation_prompt(product_desc, final_copy, framework, new_theme, design_data)
+        code_output, stats = run_claude_with_progress(prompt, f"Implementing {new_theme} themed page...")
+        
+        # Save the new themed code
+        if framework == 'react':
+            with open(target_file, 'w') as f:
+                f.write(strip_code_blocks(code_output))
+        else:
+            with open(target_file, 'w') as f:
+                f.write(strip_code_blocks(code_output))
+        
+        # Update design analysis with new theme data
+        analysis_data['design_system'] = design_system
+        analysis_data['hifi_design'] = hifi_design
+        analysis_data['current_theme'] = new_theme
+        analysis_data['last_updated'] = time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Add theme change to history
+        if 'theme_history' not in analysis_data:
+            analysis_data['theme_history'] = []
+        
+        theme_record = {
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'from_theme': current_theme,
+            'to_theme': new_theme,
+            'usage_stats': stats,
+            'method': 'theme_command'
+        }
+        analysis_data['theme_history'].append(theme_record)
+        
+        # Save updated analysis
+        with open(analysis_file, 'w') as f:
+            json.dump(analysis_data, f, indent=2)
+        
+        console.print(f"[bold green]✅ Successfully changed theme to {new_theme}![/bold green]")
+        console.print(f"📁 Updated file: [bold]{target_file}[/bold]")
+        console.print(f"📊 Design analysis updated: [bold]{analysis_file}[/bold]")
+        
+        # Show preview instructions
+        console.print(f"\n[bold cyan]🌐 Preview your themed page:[/bold cyan]")
+        console.print(f"  [bold]cd {os.path.dirname(target_file)}[/bold]")
+        console.print("  [bold]python -m http.server 3000[/bold]")
+        console.print("  Then open [bold]http://localhost:3000[/bold] in your browser")
+        
+    except Exception as e:
+        console.print(f"[red]❌ Error during theme change: {e}[/red]")
         raise typer.Exit(1)
 
 @app.command()

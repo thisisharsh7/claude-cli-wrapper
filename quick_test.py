@@ -73,3 +73,7 @@ if __name__ == "__main__":
     else:
         print("\n❌ CLI generation failed") 
         print("💡 This explains why your HTML file was blank")
+        
+        
+        
+        

@@ -76,7 +76,12 @@ ccui gen --desc "AI-powered project management tool"
 ```bash
 # Use specific reference URL as starting point, finds additional competitors
 ccui gen --url https://linear.app --desc "AI-powered project management tool"
+
+# Use multiple reference URLs (up to 3 will be used)
+ccui gen --url https://linear.app --url https://notion.so --desc "AI-powered project management tool"
 ```
+
+ccui gen --url https://strapi.io --url https://discord.com --desc "Journify makes self-reflection effortless. Instead of long, overwhelming diary entries, Journify turns journaling into a fast, 5-minute habit powered by AI prompts that feel personal and meaningful. Capture your thoughts on the go with voice journaling in under 3 minutes, break free from writer’s block with customizable templates, and instantly find past memories with smart search & insights. It’s not just about writing—it’s about building your story, one moment at a time. With community features, you can connect with others, celebrate milestones, and stay inspired along the way. Whether you want clarity, growth, or just a simple way to track your life, Journify helps you do it—stress-free, hands-free, every day." --theme brutalist
 
 #### Advanced Options
 ```bash
@@ -102,6 +107,18 @@ ccui regen --all
 
 # Regenerate with custom description
 ccui regen --section hero --desc "Updated product description"
+```
+
+#### Change Theme
+```bash
+# Change the design theme of existing landing page
+ccui theme brutalist
+ccui theme playful
+ccui theme corporate
+ccui theme minimal
+
+# Change theme for specific file
+ccui theme brutalist --file custom/page.html
 ```
 
 ### Preview Generated Output
