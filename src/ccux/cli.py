@@ -48,7 +48,12 @@ from .prompt_templates import (
     prototype_prompt,
     implementation_prompt,
     landing_prompt,
-    regeneration_prompt
+    regeneration_prompt,
+    editgen_prompt,
+    get_animation_requirements,
+    form_on_prompt,
+    form_off_prompt,
+    form_edit_prompt
 )
 
 app = typer.Typer(
@@ -275,13 +280,17 @@ def validate_html_output(html_content: str) -> bool:
     if not html_content or len(html_content.strip()) < 50:
         return False
     
-    # Check for common error patterns first
+    # Check for common error patterns first (be more specific to avoid false positives)
     error_patterns = [
         "execution error",
         "error occurred", 
         "failed to generate",
-        "timeout",
-        "claude code failed"
+        "request timeout",
+        "connection timeout", 
+        "claude code failed",
+        "i'm unable to",
+        "i cannot",
+        "sorry, i can't"
     ]
     
     content_lower = html_content.lower()
@@ -289,7 +298,7 @@ def validate_html_output(html_content: str) -> bool:
         if pattern in content_lower:
             return False
     
-    # Check for basic HTML indicators (more lenient)
+    # Check for basic HTML indicators (more lenient and case-insensitive)
     html_indicators = [
         "<!doctype html",
         "<html",
@@ -297,7 +306,10 @@ def validate_html_output(html_content: str) -> bool:
         "<body>",
         "<div",
         "<section",
-        "tailwindcss"
+        "tailwindcss",
+        "<nav",
+        "<main",
+        "<footer"
     ]
     
     # Must have at least 2 HTML indicators
@@ -305,6 +317,10 @@ def validate_html_output(html_content: str) -> bool:
     for indicator in html_indicators:
         if indicator in content_lower:
             found_indicators += 1
+    
+    # Additional check: if it starts with DOCTYPE and has basic HTML structure
+    if content_lower.strip().startswith('<!doctype html'):
+        found_indicators += 2  # Give extra weight to proper DOCTYPE
     
     return found_indicators >= 2
 
@@ -409,6 +425,237 @@ def strip_code_blocks(text: str) -> str:
     
     return '\n'.join(result_lines).strip()
 
+def get_form_specification_interactive(type_arg, fields_arg, style_arg, cta_arg, theme):
+    """Get form specification either from arguments or interactive prompts"""
+    
+    # Default values
+    form_types = ['contact', 'newsletter', 'signup', 'custom']
+    field_options = ['name', 'email', 'phone', 'message', 'company', 'website', 'subject']
+    style_options = ['inline', 'modal', 'sidebar', 'fullpage']
+    
+    # Get form type
+    if type_arg and type_arg in form_types:
+        form_type = type_arg
+    else:
+        if type_arg:
+            console.print(f"[yellow]⚠️  Invalid form type: {type_arg}[/yellow]")
+        console.print("\n[bold]Form Types:[/bold]")
+        for i, ft in enumerate(form_types, 1):
+            descriptions = {
+                'contact': 'General contact form with name, email, message',
+                'newsletter': 'Simple email signup form',
+                'signup': 'Registration form with multiple fields', 
+                'custom': 'Specify your own field configuration'
+            }
+            console.print(f"  {i}. [cyan]{ft}[/cyan]: {descriptions[ft]}")
+        
+        form_type = Prompt.ask(
+            "\n[bold]Select form type[/bold]",
+            choices=form_types,
+            default='contact'
+        )
+    
+    # Get form fields
+    if fields_arg:
+        fields = [f.strip() for f in fields_arg.split(',') if f.strip() in field_options]
+        if not fields:
+            console.print(f"[yellow]⚠️  No valid fields in: {fields_arg}[/yellow]")
+            fields = None
+    else:
+        fields = None
+    
+    if not fields:
+        # Set default fields based on form type
+        default_fields = {
+            'contact': ['name', 'email', 'message'],
+            'newsletter': ['email'],
+            'signup': ['name', 'email', 'phone'],
+            'custom': ['name', 'email']
+        }
+        
+        suggested_fields = default_fields.get(form_type, ['name', 'email'])
+        
+        console.print(f"\n[bold]Available Fields:[/bold] {', '.join(field_options)}")
+        console.print(f"[bold]Suggested for {form_type}:[/bold] {', '.join(suggested_fields)}")
+        
+        fields_input = Prompt.ask(
+            "\n[bold]Enter fields (comma-separated)[/bold]",
+            default=','.join(suggested_fields)
+        )
+        
+        fields = [f.strip() for f in fields_input.split(',') if f.strip()]
+        # Filter to valid fields only
+        fields = [f for f in fields if f in field_options]
+        
+        if not fields:
+            fields = ['name', 'email']  # Fallback
+    
+    # Get form style
+    if style_arg and style_arg in style_options:
+        form_style = style_arg
+    else:
+        if style_arg:
+            console.print(f"[yellow]⚠️  Invalid form style: {style_arg}[/yellow]")
+        
+        console.print("\n[bold]Form Styles:[/bold]")
+        style_descriptions = {
+            'inline': 'Embedded directly in page sections',
+            'modal': 'Popup modal overlay (click to open)',
+            'sidebar': 'Fixed sidebar form',
+            'fullpage': 'Dedicated full-page form section'
+        }
+        
+        for style, desc in style_descriptions.items():
+            console.print(f"  • [cyan]{style}[/cyan]: {desc}")
+        
+        form_style = Prompt.ask(
+            "\n[bold]Select form style[/bold]",
+            choices=style_options,
+            default='inline'
+        )
+    
+    # Get CTA text
+    if not cta_arg:
+        default_ctas = {
+            'contact': 'Send Message',
+            'newsletter': 'Subscribe Now',
+            'signup': 'Sign Up',
+            'custom': 'Submit'
+        }
+        
+        cta_text = Prompt.ask(
+            "\n[bold]CTA button text[/bold]",
+            default=default_ctas.get(form_type, 'Submit')
+        )
+    else:
+        cta_text = cta_arg
+    
+    # Create specification object
+    spec = {
+        'type': form_type,
+        'fields': fields,
+        'style': form_style,
+        'cta': cta_text,
+        'theme': theme,
+        'description': f"{form_type.title()} form with {len(fields)} fields ({', '.join(fields)}) in {form_style} style"
+    }
+    
+    return spec
+
+def generate_custom_form_prompt(form_spec, theme):
+    """Generate Claude prompt for custom form specifications"""
+    
+    field_html_map = {
+        'name': '<input type=\"text\" name=\"name\" placeholder=\"Your Name\" required>',
+        'email': '<input type=\"email\" name=\"email\" placeholder=\"Your Email\" required>',
+        'phone': '<input type=\"tel\" name=\"phone\" placeholder=\"Phone Number\">',
+        'message': '<textarea name=\"message\" rows=\"4\" placeholder=\"Your Message\" required></textarea>',
+        'company': '<input type=\"text\" name=\"company\" placeholder=\"Company Name\">',
+        'website': '<input type=\"url\" name=\"website\" placeholder=\"Website URL\">',
+        'subject': '<input type=\"text\" name=\"subject\" placeholder=\"Subject\" required>'
+    }
+    
+    form_fields_html = '\\n    '.join([field_html_map.get(field, f'<input type=\"text\" name=\"{field}\" placeholder=\"{field.title()}\">') for field in form_spec['fields']])
+    
+    style_requirements = {
+        'inline': 'Embed form directly within appropriate page sections (hero, contact, or footer)',
+        'modal': 'Create popup modal form with overlay background and close button',
+        'sidebar': 'Create fixed position sidebar form (right side of screen)',
+        'fullpage': 'Create dedicated full-width form section with prominent placement'
+    }
+    
+    theme_styles = get_theme_form_styles(theme)
+    
+    return f"""
+CUSTOM FORM SPECIFICATION REQUIREMENTS:
+
+Form Type: {form_spec['type'].upper()}
+Fields Required: {', '.join(form_spec['fields'])}
+Form Style: {form_spec['style'].upper()}
+CTA Button Text: "{form_spec['cta']}"
+
+FORM STRUCTURE TEMPLATE:
+<form action="#" method="POST" class="[THEME-SPECIFIC-CLASSES]">
+    <h3 class="[THEME-HEADER-CLASSES]">Form Title</h3>
+    {form_fields_html}
+    <button type="submit" class="[THEME-BUTTON-CLASSES]">{form_spec['cta']}</button>
+</form>
+
+PLACEMENT REQUIREMENTS:
+{style_requirements[form_spec['style']]}
+
+STYLING REQUIREMENTS FOR {theme.upper()} THEME:
+{theme_styles}
+
+FUNCTIONAL REQUIREMENTS:
+• Form must have proper action="#" method="POST" attributes
+• All required fields must have 'required' attribute
+• Include proper input types (email, tel, url, text, textarea)
+• Add appropriate placeholder text for each field
+• Include form validation styling (focus states, error states)
+• Ensure mobile responsiveness
+• Add proper labels for accessibility (aria-label or visible labels)
+
+IMPORTANT: The form must seamlessly integrate with the {theme} theme's design system and be placed according to the {form_spec['style']} style requirements.
+"""
+
+def get_theme_form_styles(theme: str) -> str:
+    """Get theme-specific form styling requirements"""
+    
+    if theme.lower() == 'brutalist':
+        return """
+BRUTALIST FORM REQUIREMENTS:
+• Forms: bg-white border-4 border-black p-6 shadow-[8px_8px_0px_#000] (NO rounded corners)
+• Form Headers: text-xl font-bold text-black uppercase
+• Input Fields: bg-white text-black font-mono border-4 border-black shadow-[4px_4px_0px_#000] placeholder-gray-600 uppercase (NO rounded corners)
+• Focus States: focus:border-primary focus:shadow-[8px_8px_0px_#FF0080]
+• Submit Buttons: bg-primary text-white font-black uppercase border-4 border-black shadow-[4px_4px_0px_#000]
+• Button Hover: hover:bg-primary-dark hover:shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1
+• Typography: All text UPPERCASE, heavy font weights, no soft styling
+• Colors: Primary #FF0080, black borders, white backgrounds, harsh contrast
+• NO rounded corners, NO soft shadows, NO gradients - pure geometric brutalism
+        """
+    
+    elif theme.lower() == 'minimal':
+        return """
+MINIMAL FORM REQUIREMENTS:
+• Forms: bg-white border border-gray-200 p-6 rounded-lg shadow-sm
+• Form Headers: text-lg font-medium text-gray-900
+• Input Fields: border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500
+• Submit Buttons: bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-800
+• Clean, simple styling with subtle shadows and rounded corners
+        """
+    
+    elif theme.lower() == 'corporate':
+        return """
+CORPORATE FORM REQUIREMENTS:
+• Forms: bg-white border border-gray-300 p-8 rounded-lg shadow-lg
+• Form Headers: text-xl font-semibold text-gray-900
+• Input Fields: border-2 border-gray-300 rounded-lg px-4 py-3 focus:border-blue-600
+• Submit Buttons: bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700
+• Professional, trustworthy styling with blue accent colors
+        """
+    
+    elif theme.lower() == 'playful':
+        return """
+PLAYFUL FORM REQUIREMENTS:
+• Forms: bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 p-6 rounded-2xl
+• Form Headers: text-xl font-bold text-purple-800
+• Input Fields: border-2 border-purple-300 rounded-xl px-4 py-3 focus:border-pink-400
+• Submit Buttons: bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl
+• Fun, colorful styling with gradients and organic shapes
+        """
+    
+    else:
+        # Default fallback for other themes
+        return f"""
+{theme.upper()} FORM REQUIREMENTS:
+• Forms should match the {theme} theme's established design system
+• Use consistent colors, typography, spacing, and border styles from the theme
+• Maintain theme-appropriate hover states and focus indicators
+• Follow the theme's button and input styling conventions
+        """
+
 def find_landing_page_files(output_dir: str = None) -> Dict[str, str]:
     """Find existing landing page files in common locations"""
     if output_dir is None:
@@ -443,6 +690,205 @@ def find_landing_page_files(output_dir: str = None) -> Dict[str, str]:
                 break
     
     return found_files
+
+def add_theme_appropriate_animations(content: str, theme: str) -> str:
+    """Add theme-appropriate animations to existing content without Claude API calls"""
+    
+    # Define theme-specific animation styles
+    theme_animations = {
+        'minimal': {
+            'css': '''
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes slideUp {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fadeInUp { animation: fadeInUp 0.6s ease-out forwards; }
+            .animate-slideUp { animation: slideUp 0.5s ease-out forwards; }
+            .animate-delay-100 { animation-delay: 0.1s; }
+            .animate-delay-200 { animation-delay: 0.2s; }
+            .animate-delay-300 { animation-delay: 0.3s; }
+            [data-animate] { opacity: 0; }
+            @media (prefers-reduced-motion: reduce) {
+                [data-animate] { opacity: 1; animation: none !important; }
+            }
+            ''',
+            'attributes': [
+                ('h1', 'data-animate="fadeInUp"'),
+                ('.hero', 'data-animate="fadeInUp"'),
+                ('.feature', 'data-animate="slideUp"'),
+                ('.card', 'data-animate="slideUp"'),
+                ('button', 'data-animate="slideUp"')
+            ]
+        },
+        'brutalist': {
+            'css': '''
+            @keyframes brutalistSlam {
+                0% { opacity: 0; transform: translateY(40px) scale(0.9); }
+                70% { transform: translateY(-5px) scale(1.02); }
+                100% { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @keyframes brutalistPop {
+                from { opacity: 0; transform: scale(0.8); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            .animate-brutalistSlam { animation: brutalistSlam 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
+            .animate-brutalistPop { animation: brutalistPop 0.4s ease-out forwards; }
+            .animate-delay-100 { animation-delay: 0.1s; }
+            .animate-delay-200 { animation-delay: 0.2s; }
+            [data-animate] { opacity: 0; }
+            @media (prefers-reduced-motion: reduce) {
+                [data-animate] { opacity: 1; animation: none !important; }
+            }
+            ''',
+            'attributes': [
+                ('h1', 'data-animate="brutalistSlam"'),
+                ('.hero', 'data-animate="brutalistSlam"'),
+                ('.feature', 'data-animate="brutalistPop"'),
+                ('.card', 'data-animate="brutalistPop"'),
+                ('button', 'data-animate="brutalistPop"')
+            ]
+        },
+        'dark': {
+            'css': '''
+            @keyframes darkFadeIn {
+                from { opacity: 0; transform: translateY(20px); filter: blur(5px); }
+                to { opacity: 1; transform: translateY(0); filter: blur(0px); }
+            }
+            @keyframes darkGlow {
+                from { opacity: 0; box-shadow: 0 0 0 rgba(255, 255, 255, 0.1); }
+                to { opacity: 1; box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1); }
+            }
+            .animate-darkFadeIn { animation: darkFadeIn 0.8s ease-out forwards; }
+            .animate-darkGlow { animation: darkGlow 0.6s ease-out forwards; }
+            .animate-delay-100 { animation-delay: 0.1s; }
+            .animate-delay-200 { animation-delay: 0.2s; }
+            [data-animate] { opacity: 0; }
+            @media (prefers-reduced-motion: reduce) {
+                [data-animate] { opacity: 1; animation: none !important; }
+            }
+            ''',
+            'attributes': [
+                ('h1', 'data-animate="darkFadeIn"'),
+                ('.hero', 'data-animate="darkFadeIn"'),
+                ('.feature', 'data-animate="darkGlow"'),
+                ('.card', 'data-animate="darkGlow"'),
+                ('button', 'data-animate="darkFadeIn"')
+            ]
+        }
+    }
+    
+    # Default to minimal if theme not found
+    if theme not in theme_animations:
+        theme = 'minimal'
+    
+    animation_config = theme_animations[theme]
+    
+    # Add CSS animations to existing <style> tag or create new one
+    if '<style>' in content:
+        # Insert before closing </style>
+        content = content.replace('</style>', f"{animation_config['css']}\n</style>")
+    else:
+        # Add new style block in head
+        if '</head>' in content:
+            content = content.replace('</head>', f"<style>{animation_config['css']}</style>\n</head>")
+    
+    # Add data-animate attributes to appropriate elements
+    for selector, attribute in animation_config['attributes']:
+        # Add to elements that don't already have data-animate
+        if selector.startswith('.'):
+            # Class selector
+            class_name = selector[1:]
+            pattern = f'class="([^"]*{class_name}[^"]*)"(?![^<]*data-animate)'
+            content = re.sub(pattern, f'class="\\1" {attribute}', content)
+        else:
+            # Element selector
+            pattern = f'<{selector}([^>]*)(?<!data-animate="[^"]*")>'
+            content = re.sub(pattern, f'<{selector}\\1 {attribute}>', content)
+    
+    # Add JavaScript for IntersectionObserver
+    animation_js = '''
+    // Animation controller
+    document.addEventListener('DOMContentLoaded', function() {
+        const animatedElements = document.querySelectorAll('[data-animate]');
+        
+        const animationObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const element = entry.target;
+                    const animationType = element.getAttribute('data-animate');
+                    element.classList.add(`animate-${animationType}`);
+                    animationObserver.unobserve(element);
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        animatedElements.forEach(el => animationObserver.observe(el));
+    });
+    '''
+    
+    # Add JavaScript before closing </body> tag
+    if '</body>' in content:
+        content = content.replace('</body>', f"<script>{animation_js}</script>\n</body>")
+    
+    return content
+
+def remove_animations_from_content(content: str) -> str:
+    """Remove all animation code from content (used by edit mode)"""
+    original_content = content  # Backup original content
+    
+    # Remove data-animate attributes
+    if 'data-animate=' in content:
+        content = re.sub(r'\s*data-animate="[^"]*"', '', content)
+    
+    # Remove animation-specific class names from class attributes
+    if 'animate-' in content or 'fadeIn' in content or 'slideUp' in content:
+        content = re.sub(r'class="([^"]*)\s*(animate-[\w-]+|fadeInUp|slideDown|countUp|fadeInStagger|bounce|pulse)\s*([^"]*)"', 
+                        r'class="\1 \3"', content)
+        content = re.sub(r'class="\s+"', 'class=""', content)  # Clean up empty spaces
+        content = re.sub(r'class=""', '', content)  # Remove empty class attributes
+    
+    # Remove ONLY specific animation CSS (very precise patterns)
+    animation_css_patterns = [
+        r'@keyframes\s+(?:fadeInUp|slideUp|slideDown|countUp|fadeInStagger|bounce|pulse|darkFadeIn|darkGlow|brutalistSlam|brutalistPop)\s*\{[^}]+\}',  # Only animation keyframes
+        r'\.animate-(?:fadeInUp|slideUp|slideDown|countUp|fadeInStagger|bounce|pulse|darkFadeIn|darkGlow|brutalistSlam|brutalistPop)\s*\{[^}]+\}',  # Only .animate-* for animations  
+        r'\.(?:fadeInUp|slideUp|slideDown|countUp|fadeInStagger|bounce|pulse|darkFadeIn|darkGlow|brutalistSlam|brutalistPop)\s*\{[^}]+\}',  # Direct animation classes
+        r'\.animate-delay-\d+\s*\{[^}]+\}',  # Animation delay classes
+        r'\.delay-\d+\s*\{\s*\}',  # Empty delay classes
+    ]
+    
+    for pattern in animation_css_patterns:
+        if re.search(pattern, content, re.IGNORECASE | re.DOTALL):
+            content = re.sub(pattern, '', content, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Remove animation-specific JavaScript
+    js_patterns_to_remove = [
+        r'//\s*Animation.*?(?=\n\s*(?://|</script>|$))',  # Animation comments
+        r'const\s+animationObserver\s*=\s*new\s+IntersectionObserver\([^;]+\);',  # Observer creation
+        r'document\.querySelectorAll\(\s*[\'\"]\[data-animate\][\'\"]\s*\)\.forEach\([^}]+\}\);',  # Animation setup
+        r'observer\.observe\([^)]*\);',  # Observer observe calls
+        r'function\s+initAnimations\s*\([^)]*\)\s*\{[^}]+\}',  # Animation functions
+        r'initAnimations\(\);',  # Function calls
+        r'document\.addEventListener\(\s*[\'"]DOMContentLoaded[\'"][^}]*animationObserver[^}]*\}\);',  # DOM ready handlers with animations
+    ]
+    
+    for pattern in js_patterns_to_remove:
+        if re.search(pattern, content, re.IGNORECASE | re.DOTALL):
+            content = re.sub(pattern, '', content, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Clean up whitespace and empty blocks
+    content = re.sub(r'\n\s*\n\s*\n', '\n\n', content)
+    content = re.sub(r'<style[^>]*>\s*</style>', '', content)
+    content = re.sub(r'<script[^>]*>\s*</script>', '', content)
+    
+    # Verify we didn't break the page structure
+    if '<html' not in content or '<body' not in content:
+        return original_content
+        
+    return content
 
 def extract_page_context(file_path: str) -> Dict[str, Any]:
     """Extract metadata and context from existing landing page"""
@@ -479,6 +925,241 @@ def extract_page_context(file_path: str) -> Dict[str, Any]:
     except Exception as e:
         console.print(f"[yellow]⚠️  Could not extract context from {file_path}: {e}[/yellow]")
         return {'framework': 'html', 'sections': [], 'theme': 'minimal', 'other_sections': []}
+
+def remove_forms_surgically(content: str) -> str:
+    """Remove all forms from HTML content without altering anything else"""
+    import re
+    
+    # Remove form elements and their content
+    # This regex matches <form...>...</form> including nested content
+    form_pattern = r'<form[^>]*>.*?</form>'
+    content = re.sub(form_pattern, '', content, flags=re.DOTALL | re.IGNORECASE)
+    
+    # Remove standalone contact sections that are only forms
+    # Look for contact sections that only contain form elements
+    contact_section_pattern = r'<!-- START: contact -->\s*<section[^>]*id=["\']contact["\'][^>]*>.*?</section>\s*<!-- END: contact -->'
+    
+    def check_contact_section(match):
+        section_content = match.group(0)
+        # If the section only contains form-related content, remove it
+        # Otherwise, just remove the form from within it
+        section_inner = re.search(r'<section[^>]*>(.*?)</section>', section_content, re.DOTALL)
+        if section_inner:
+            inner_content = section_inner.group(1)
+            # Remove forms from inner content
+            inner_without_forms = re.sub(r'<form[^>]*>.*?</form>', '', inner_content, flags=re.DOTALL | re.IGNORECASE)
+            # Remove empty divs and wrapper elements
+            inner_without_forms = re.sub(r'<div[^>]*>\s*</div>', '', inner_without_forms, flags=re.DOTALL)
+            inner_without_forms = inner_without_forms.strip()
+            
+            # If nothing meaningful left, remove the entire section
+            if not inner_without_forms or len(inner_without_forms.strip()) < 50:
+                return ''
+            else:
+                # Keep section but without forms
+                return section_content.replace(inner_content, inner_without_forms)
+        return section_content
+    
+    content = re.sub(contact_section_pattern, check_contact_section, content, flags=re.DOTALL | re.IGNORECASE)
+    
+    # Clean up extra whitespace/newlines left by form removal
+    content = re.sub(r'\n\s*\n\s*\n', '\n\n', content)
+    
+    return content
+
+def insert_form_surgically(content: str, theme: str, form_type: str = 'contact', fields: List[str] = None, cta_text: str = "Send Message") -> str:
+    """Insert a form into HTML content while matching the existing theme"""
+    if fields is None:
+        fields = ['name', 'email', 'message']
+    
+    # Generate theme-appropriate form HTML
+    form_html = generate_theme_form_html(theme, form_type, fields, cta_text)
+    
+    # Find the best place to insert the form
+    # 1. If there's already a contact section, add form there
+    # 2. If there's a pricing section, add form after it
+    # 3. If there's a footer, add form before it
+    # 4. Otherwise, add at the end before closing body
+    
+    contact_section_pattern = r'(<!-- START: contact -->.*?<!-- END: contact -->)'
+    pricing_section_pattern = r'(<!-- END: pricing -->\s*)'
+    footer_pattern = r'(<footer[^>]*>)'
+    closing_body_pattern = r'(</body>)'
+    
+    # Try to insert in contact section first
+    if re.search(r'<!-- START: contact -->', content, re.IGNORECASE):
+        # Add form inside existing contact section
+        def replace_contact_section(match):
+            section_content = match.group(0)
+            # Insert form before the closing of the section
+            section_content = re.sub(r'(</div>\s*</section>\s*<!-- END: contact -->)', 
+                                   f'{form_html}\n\\1', section_content)
+            return section_content
+        
+        content = re.sub(contact_section_pattern, replace_contact_section, content, flags=re.DOTALL | re.IGNORECASE)
+    
+    # If no contact section, try after pricing
+    elif re.search(r'<!-- END: pricing -->', content, re.IGNORECASE):
+        contact_section = f'''
+<!-- START: contact -->
+<section id="contact" class="py-20 bg-gray-800">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-16">
+<h2 class="text-3xl md:text-5xl font-bold mb-4 text-white">Get Started Today</h2>
+<p class="text-xl text-gray-300 max-w-3xl mx-auto">Ready to get started? Contact us and discover how our solution can benefit you.</p>
+</div>
+{form_html}
+</div>
+</section>
+<!-- END: contact -->
+'''
+        content = re.sub(pricing_section_pattern, f'\\1\n{contact_section}\n', content, flags=re.IGNORECASE)
+    
+    # If no pricing, try before footer
+    elif re.search(r'<footer', content, re.IGNORECASE):
+        contact_section = f'''
+<!-- START: contact -->
+<section id="contact" class="py-20 bg-gray-800">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-16">
+<h2 class="text-3xl md:text-5xl font-bold mb-4 text-white">Get Started Today</h2>
+<p class="text-xl text-gray-300 max-w-3xl mx-auto">Ready to get started? Contact us and discover how our solution can benefit you.</p>
+</div>
+{form_html}
+</div>
+</section>
+<!-- END: contact -->
+
+'''
+        content = re.sub(footer_pattern, f'{contact_section}\\1', content, flags=re.IGNORECASE)
+    
+    # Last resort - add before closing body
+    else:
+        contact_section = f'''
+<!-- START: contact -->
+<section id="contact" class="py-20 bg-gray-800">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-16">
+<h2 class="text-3xl md:text-5xl font-bold mb-4 text-white">Get Started Today</h2>
+<p class="text-xl text-gray-300 max-w-3xl mx-auto">Ready to get started? Contact us and discover how our solution can benefit you.</p>
+</div>
+{form_html}
+</div>
+</section>
+<!-- END: contact -->
+
+'''
+        content = re.sub(closing_body_pattern, f'{contact_section}\\1', content, flags=re.IGNORECASE)
+    
+    return content
+
+def generate_theme_form_html(theme: str, form_type: str, fields: List[str], cta_text: str) -> str:
+    """Generate form HTML that matches the specified theme"""
+    
+    # Theme-specific styles
+    theme_styles = {
+        'dark': {
+            'container': 'bg-gray-900 p-8 rounded-xl border border-gray-700',
+            'input': 'w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent',
+            'textarea': 'w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent',
+            'label': 'block text-sm font-medium text-gray-300 mb-2',
+            'button': 'bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-600/25'
+        },
+        'minimal': {
+            'container': 'bg-white p-8 rounded-lg shadow-lg border border-gray-200',
+            'input': 'w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'textarea': 'w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'label': 'block text-sm font-medium text-gray-700 mb-2',
+            'button': 'bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition-colors'
+        },
+        'brutalist': {
+            'container': 'bg-white p-8 border-4 border-black shadow-[8px_8px_0px_#000]',
+            'input': 'w-full px-4 py-3 border-4 border-black bg-white text-black font-mono shadow-[4px_4px_0px_#000] focus:outline-none',
+            'textarea': 'w-full px-4 py-3 border-4 border-black bg-white text-black font-mono resize-none shadow-[4px_4px_0px_#000] focus:outline-none',
+            'label': 'block text-sm font-black text-black uppercase mb-2',
+            'button': 'bg-yellow-400 hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-black font-black uppercase py-4 px-8 border-4 border-black shadow-[4px_4px_0px_#000] transition-transform'
+        },
+        'corporate': {
+            'container': 'bg-white p-8 rounded-lg shadow-xl border border-gray-300',
+            'input': 'w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600',
+            'textarea': 'w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600',
+            'label': 'block text-sm font-semibold text-gray-700 mb-2',
+            'button': 'bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-md transition-colors'
+        }
+    }
+    
+    # Default to minimal if theme not found
+    if theme not in theme_styles:
+        theme = 'minimal'
+    
+    styles = theme_styles[theme]
+    
+    # Generate field inputs
+    field_inputs = []
+    
+    for field in fields:
+        if field == 'name':
+            field_inputs.append(f'''
+<div>
+<label for="name" class="{styles['label']}">Name</label>
+<input type="text" id="name" name="name" required class="{styles['input']}" placeholder="Your full name">
+</div>''')
+        elif field == 'email':
+            field_inputs.append(f'''
+<div>
+<label for="email" class="{styles['label']}">Email</label>
+<input type="email" id="email" name="email" required class="{styles['input']}" placeholder="your.email@example.com">
+</div>''')
+        elif field == 'phone':
+            field_inputs.append(f'''
+<div>
+<label for="phone" class="{styles['label']}">Phone</label>
+<input type="tel" id="phone" name="phone" class="{styles['input']}" placeholder="(555) 123-4567">
+</div>''')
+        elif field == 'company':
+            field_inputs.append(f'''
+<div>
+<label for="company" class="{styles['label']}">Company</label>
+<input type="text" id="company" name="company" class="{styles['input']}" placeholder="Your company name">
+</div>''')
+        elif field == 'website':
+            field_inputs.append(f'''
+<div>
+<label for="website" class="{styles['label']}">Website</label>
+<input type="url" id="website" name="website" class="{styles['input']}" placeholder="https://yourwebsite.com">
+</div>''')
+        elif field == 'subject':
+            field_inputs.append(f'''
+<div>
+<label for="subject" class="{styles['label']}">Subject</label>
+<input type="text" id="subject" name="subject" class="{styles['input']}" placeholder="How can we help?">
+</div>''')
+        elif field == 'message':
+            field_inputs.append(f'''
+<div class="md:col-span-2">
+<label for="message" class="{styles['label']}">Message</label>
+<textarea id="message" name="message" rows="6" required class="{styles['textarea']}" placeholder="Tell us about your project or ask any questions..."></textarea>
+</div>''')
+    
+    # Arrange fields in a grid
+    grid_classes = "grid-cols-1" if len([f for f in fields if f != 'message']) <= 1 else "grid-cols-1 md:grid-cols-2"
+    
+    form_html = f'''
+<div class="{styles['container']}">
+<form action="#" method="POST" class="space-y-6">
+<div class="grid {grid_classes} gap-6">
+{"".join(field_inputs)}
+</div>
+
+<div class="text-center">
+<button type="submit" class="{styles['button']}">
+{cta_text}
+</button>
+</div>
+</form>
+</div>'''
+    
+    return form_html
 
 def update_design_analysis_for_regen(output_dir: str, sections_regenerated: List[str], product_desc: str, usage_stats: Dict[str, Any]) -> None:
     """Update design_analysis.json file with regeneration information"""
@@ -648,6 +1329,7 @@ def gen(
     framework: Optional[str] = typer.Option(None, "--framework", "-f", help="Output framework (html|react)"),
     theme: Optional[str] = typer.Option(None, "--theme", "-t", help=f"Design theme ({'/'.join(get_theme_choices())})"),
     no_design_thinking: bool = typer.Option(False, "--no-design-thinking", help="Skip design thinking process"),
+    include_forms: bool = typer.Option(False, "--include-forms", help="Include contact forms in the landing page"),
     output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory")
 ):
     """Generate a conversion-optimized landing page
@@ -783,7 +1465,7 @@ def gen(
                 console.print(f"[yellow]⚠️  Failed to capture screenshot: {e}[/yellow]")
         
         # Generate directly
-        prompt = landing_prompt(desc, framework, theme, sections)
+        prompt = landing_prompt(desc, framework, theme, sections, include_forms=include_forms)
         output, stats = run_claude_with_progress(prompt, "Generating landing page...")
         
         # Save output
@@ -939,7 +1621,7 @@ def gen(
             for attempt in range(max_attempts):
                 try:
                     attempt_desc = "Implementing landing page..." if attempt == 0 else f"Regenerating landing page (attempt {attempt + 1})..."
-                    prompt = implementation_prompt(desc, final_copy, framework, theme, design_data)
+                    prompt = implementation_prompt(desc, final_copy, framework, theme, design_data, include_forms=include_forms)
                     code_output, _ = run_claude_with_progress(prompt, attempt_desc)
                     
                     # Validate the output
@@ -1149,6 +1831,157 @@ def regen(
         raise typer.Exit(1)
 
 @app.command()
+def editgen(
+    instruction: str = typer.Argument(..., help="Specific edit instruction (what to change)"),
+    desc: Optional[str] = typer.Option(None, "--desc", "-d", help="Product description (auto-detected if not provided)"),
+    file: Optional[str] = typer.Option(None, "--file", "-f", help="Path to landing page file"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory"),
+    sections: Optional[str] = typer.Option(None, "--sections", "-s", help="Specific sections to focus changes on (comma-separated)")
+):
+    """Edit specific parts of existing landing page while preserving theme and layout
+    
+    This command makes targeted edits to your landing page while preserving the overall 
+    design theme, layout, and functionality. Only the requested changes are made.
+    
+    Examples:
+      ccux editgen "Change the hero headline to 'Revolutionary AI Platform'"
+      ccux editgen "Update the pricing section to show monthly prices" --sections hero,pricing
+      ccux editgen "Replace the testimonial with a customer quote from John Doe" --file custom/page.html
+    """
+    
+    config = Config()
+    output_dir = output_dir or config.get('output_dir', 'output/landing-page')
+    
+    # Locate landing page file
+    if file:
+        target_file = Path(file)
+        if not target_file.exists():
+            console.print(f"[red]❌ File not found: {file}[/red]")
+            raise typer.Exit(1)
+        output_dir = str(target_file.parent)
+    else:
+        # Look for landing page in output directory
+        target_file = Path(output_dir) / 'index.html'
+        if not target_file.exists():
+            # Try alternative locations
+            alt_paths = [
+                Path('output/landing-page/index.html'),
+                Path('index.html')
+            ]
+            for alt_path in alt_paths:
+                if alt_path.exists():
+                    target_file = alt_path
+                    output_dir = str(alt_path.parent)
+                    break
+            else:
+                console.print(f"[red]❌ No landing page found. Run [cyan]ccux gen[/cyan] first or specify --file[/red]")
+                raise typer.Exit(1)
+    
+    console.print(f"[cyan]📝 Editing: {target_file}[/cyan]")
+    console.print(f"[cyan]📝 Edit Instruction: {instruction}[/cyan]")
+    
+    # Extract context from existing file
+    context = extract_page_context(str(target_file))
+    
+    # Auto-detect product description if not provided
+    if not desc:
+        try:
+            analysis_file = Path(output_dir) / 'design_analysis.json'
+            if analysis_file.exists():
+                with open(analysis_file, 'r') as f:
+                    analysis_data = json.load(f)
+                    desc = analysis_data.get('product_description', 'Generated landing page')
+                    console.print(f"[green]📄 Using product description from design analysis[/green]")
+            else:
+                desc = "Generated landing page"
+                console.print(f"[yellow]⚠️  No product description found. Using default.[/yellow]")
+        except Exception as e:
+            desc = "Generated landing page"
+            console.print(f"[yellow]⚠️  Could not read design analysis: {e}. Using default description.[/yellow]")
+    
+    # Parse affected sections if provided
+    affected_sections = None
+    if sections:
+        affected_sections = [s.strip() for s in sections.split(',')]
+        console.print(f"[cyan]🎯 Focusing on sections: {', '.join(affected_sections)}[/cyan]")
+    
+    # Generate edit prompt
+    framework = context.get('framework', 'html')
+    theme = context.get('theme', 'minimal')
+    
+    console.print(f"[cyan]🎨 Detected theme: {theme} | Framework: {framework}[/cyan]")
+    
+    try:
+        # Generate the edit prompt
+        prompt = editgen_prompt(
+            product_desc=desc,
+            framework=framework,
+            theme=theme,
+            edit_instruction=instruction,
+            existing_context=context,
+            affected_sections=affected_sections
+        )
+        
+        # Run Claude with the edit
+        console.print(f"\n[bold blue]🤖 Processing edit with Claude AI...[/bold blue]")
+        output, stats = run_claude_with_progress(prompt, f"Making edit: {instruction[:50]}...")
+        
+        # Validate output
+        if not validate_html_output(output):
+            console.print("[red]❌ Generated invalid HTML output[/red]")
+            raise typer.Exit(1)
+        
+        # Save the edited file
+        with open(target_file, 'w') as f:
+            f.write(output)
+        
+        # Update design analysis if it exists
+        try:
+            analysis_file = Path(output_dir) / 'design_analysis.json'
+            if analysis_file.exists():
+                with open(analysis_file, 'r') as f:
+                    analysis_data = json.load(f)
+                
+                # Add edit history
+                if 'edit_history' not in analysis_data:
+                    analysis_data['edit_history'] = []
+                
+                edit_entry = {
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'instruction': instruction,
+                    'affected_sections': affected_sections,
+                    'usage_stats': stats
+                }
+                analysis_data['edit_history'].append(edit_entry)
+                
+                with open(analysis_file, 'w') as f:
+                    json.dump(analysis_data, f, indent=2)
+                    
+                console.print(f"[cyan]📊 Updated design analysis with edit history[/cyan]")
+        except Exception as e:
+            console.print(f"[yellow]⚠️  Could not update design analysis: {e}[/yellow]")
+        
+        # Show success message and usage stats
+        console.print(f"\n[bold green]✅ Successfully edited landing page![/bold green]")
+        console.print(f"[green]📄 File updated: {target_file}[/green]")
+        
+        if stats:
+            console.print(f"\n[dim]📊 Usage: {stats.get('input_tokens', 0)} input tokens, {stats.get('output_tokens', 0)} output tokens[/dim]")
+            if 'cost_estimate' in stats:
+                console.print(f"[dim]💰 Estimated cost: ${stats['cost_estimate']:.4f}[/dim]")
+        
+        # Show preview instructions
+        console.print("\n[bold cyan]🌐 Preview your edited page:[/bold cyan]")
+        console.print(f"  • Open [bold]{target_file}[/bold] in your browser")
+        if framework == 'react':
+            console.print("  • Or run [bold]npx serve[/bold] in the output directory")
+            console.print("  Then open [bold]http://localhost:3000[/bold] in your browser")
+        
+    except Exception as e:
+        console.print(f"[red]❌ Error during edit: {e}[/red]")
+        raise typer.Exit(1)
+
+@app.command()
 def theme(
     new_theme: str = typer.Argument(..., help=f"New design theme ({'/'.join(get_theme_choices())})"),
     file: Optional[str] = typer.Option(None, "--file", "-f", help="Path to landing page file"),
@@ -1306,31 +2139,39 @@ def theme(
         raise typer.Exit(1)
 
 @app.command()
-def animate(
-    state: str = typer.Argument(..., help="Animation state (on|off)"),
+def form(
+    state: str = typer.Argument(..., help="Form inclusion state (on|off|edit)"),
     file: Optional[str] = typer.Option(None, "--file", "-f", help="Path to landing page file"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory")
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory"),
+    form_type_param: Optional[str] = typer.Option(None, "--type", "-t", help="Form type (contact|newsletter|signup|custom)"),
+    fields: Optional[str] = typer.Option(None, "--fields", help="Comma-separated field list (name,email,phone,message)"),
+    style: Optional[str] = typer.Option(None, "--style", "-s", help="Form style (inline|modal|sidebar|fullpage)"),
+    cta: Optional[str] = typer.Option(None, "--cta", help="Custom CTA button text")
 ):
-    """Control animations in landing pages
+    """Advanced form control in landing pages using Claude AI
     
-    Turn animations on or off in existing landing pages. When turned on,
-    applies design-specific animations based on the detected theme.
+    Control forms with detailed customization including type, fields, styling, and placement.
+    The 'edit' state allows complete customization of form specifications.
     
     Examples:
-      ccux animate off                    # Disable all animations
-      ccux animate on                     # Enable theme-based animations  
-      ccux animate off --file custom.html # Target specific file
+      ccux form on                                    # Add basic contact forms
+      ccux form off                                   # Remove all forms
+      ccux form edit --type contact --fields name,email,message --cta "Get In Touch"
+      ccux form edit --type newsletter --fields email --style inline
+      ccux form edit --type signup --fields name,email,phone --style modal
+      ccux form on --file custom.html                # Target specific file
     """
     
     config = Config()
     output_dir = output_dir or config.get('output_dir', 'output/landing-page')
     
     # Validate state argument
-    if state not in ['on', 'off']:
-        console.print("[red]❌ Animation state must be 'on' or 'off'[/red]")
+    if state not in ['on', 'off', 'edit']:
+        console.print("[red]❌ Form state must be 'on', 'off', or 'edit'[/red]")
         console.print("Examples:")
-        console.print("  [cyan]ccux animate on[/cyan]   - Enable animations")
-        console.print("  [cyan]ccux animate off[/cyan]  - Disable animations")
+        console.print("  [cyan]ccux form on[/cyan]                                     - Add basic contact forms")
+        console.print("  [cyan]ccux form off[/cyan]                                    - Remove all forms")
+        console.print("  [cyan]ccux form edit --type contact --fields name,email[/cyan] - Custom form specification")
         raise typer.Exit(1)
     
     # Find target file
@@ -1346,83 +2187,167 @@ def animate(
             console.print("Run [bold]ccux gen[/bold] first to create a landing page")
             raise typer.Exit(1)
         
-        # Prefer HTML for animation control (React not supported yet)
+        # Prefer HTML for form control (React not supported yet)
         if 'html' in found_files:
             target_file = found_files['html']
         else:
-            console.print("[red]❌ Only HTML files are supported for animation control[/red]")
-            console.print("React animation control coming soon!")
+            console.print("[red]❌ Only HTML files are supported for form control[/red]")
+            console.print("React form control coming soon!")
             raise typer.Exit(1)
     
-    console.print(f"[bold blue]🎬 {'Enabling' if state == 'on' else 'Disabling'} animations in: {target_file}[/bold blue]")
+    action_text = {
+        'on': 'Adding basic contact form with Claude AI',
+        'off': 'Removing all forms with Claude AI', 
+        'edit': 'Customizing form with Claude AI'
+    }[state]
+    console.print(f"[bold blue]📝 {action_text}...[/bold blue]")
     
     try:
-        # Read the current file
+        # Read the current file content
         with open(target_file, 'r', encoding='utf-8') as f:
-            content = f.read()
+            existing_html = f.read()
         
-        # Extract context for theme-based animations
-        context = extract_page_context(target_file)
-        theme = context['theme']
+        # Get product description from design analysis if available
+        product_desc = "Landing page"
+        design_analysis_file = os.path.join(os.path.dirname(target_file), 'design_analysis.json')
+        if os.path.exists(design_analysis_file):
+            try:
+                with open(design_analysis_file, 'r', encoding='utf-8') as f:
+                    analysis_data = json.load(f)
+                    product_desc = analysis_data.get('product_description', product_desc)
+            except:
+                pass  # Fall back to default
+        
+        # Detect theme from existing content
+        detected_theme = detect_theme_from_content(existing_html)
+        
+        # Generate appropriate Claude prompt based on state
+        if state == 'on':
+            prompt = form_on_prompt(product_desc, existing_html, detected_theme)
+            description = f"Adding basic contact form with {detected_theme} theme"
+        elif state == 'off':
+            prompt = form_off_prompt(existing_html)
+            description = "Removing all forms while preserving design"
+        elif state == 'edit':
+            # Parse and validate edit parameters
+            form_type = form_type_param or 'contact'
+            fields_list = [f.strip() for f in (fields or 'name,email,message').split(',')]
+            
+            prompt = form_edit_prompt(
+                existing_html, 
+                form_type, 
+                fields_list, 
+                style, 
+                cta, 
+                detected_theme
+            )
+            form_desc = f"{form_type} form with {', '.join(fields_list)} fields"
+            if style:
+                form_desc += f" ({style} style)"
+            description = f"Adding custom {form_desc}"
+        
+        # Call Claude AI to process forms
+        output, stats = run_claude_with_progress(prompt, description)
+        
+        # Validate the output is valid HTML
+        cleaned_output = strip_code_blocks(output)
+        if not validate_html_output(cleaned_output):
+            console.print("[red]❌ Claude generated invalid HTML output[/red]")
+            console.print("[yellow]💡 Try running the command again or check the original file[/yellow]")
+            raise typer.Exit(1)
+        
+        # Write the updated content back to the file
+        with open(target_file, 'w', encoding='utf-8') as f:
+            f.write(cleaned_output)
+        
+        # Verify the operation and show results
+        form_count = cleaned_output.count('<form')
         
         if state == 'off':
-            # Disable animations by adding no-animations class to body and CSS rules
-            if 'class="' in content and 'data-animate="true"' in content:
-                # Add no-animations class to body
-                content = re.sub(
-                    r'<body([^>]*?)class="([^"]*?)"', 
-                    r'<body\1class="\2 no-animations"', 
-                    content
-                )
-                
-                # Add CSS to disable animations if not present
-                animation_disable_css = """
-.no-animations * {
-  animation: none !important;
-  transition: none !important;
-}
-.no-animations html {
-  scroll-behavior: auto !important;
-}"""
-                
-                # Insert CSS before closing </style> tag
-                if '</style>' in content and animation_disable_css not in content:
-                    content = content.replace('</style>', f'{animation_disable_css}\n</style>')
-                
-                console.print("[green]✅ Animations disabled[/green]")
+            if form_count == 0:
+                console.print("[bold green]✅ Successfully removed all forms![/bold green]")
+                console.print("• All form elements removed by Claude AI")
+                console.print("• Page design and layout preserved")
             else:
-                console.print("[yellow]⚠️  No animations found to disable[/yellow]")
-        
-        else:  # state == 'on'
-            # Enable animations by removing no-animations class and ensuring animation system is present
-            if 'no-animations' in content:
-                # Remove no-animations class from body
-                content = re.sub(
-                    r'<body([^>]*?)class="([^"]*?)no-animations\s*([^"]*?)"', 
-                    r'<body\1class="\2\3"', 
-                    content
-                )
-                content = re.sub(r'\s+class=""', '', content)  # Clean up empty class attributes
+                console.print(f"[yellow]⚠️  Found {form_count} remaining form(s). Some forms may not have been removed.[/yellow]")
                 
-                console.print(f"[green]✅ Animations enabled with {theme} theme styling[/green]")
+        elif state in ['on', 'edit']:
+            if form_count > 0:
+                if state == 'edit':
+                    console.print(f"[bold green]✅ Successfully added custom {form_type} form![/bold green]")
+                    console.print(f"• Form type: {form_type}")
+                    console.print(f"• Fields: {', '.join(fields_list)}")
+                    if cta:
+                        console.print(f"• CTA text: {cta}")
+                    if style:
+                        console.print(f"• Style: {style}")
+                else:
+                    console.print("[bold green]✅ Successfully added contact form![/bold green]")
+                    console.print("• Basic contact form with name, email, message fields")
+                    
+                console.print(f"• Theme-matched styling: {detected_theme}")
+                console.print("• Integrated seamlessly by Claude AI without altering existing design")
+                
             else:
-                console.print("[yellow]⚠️  Animations are already enabled[/yellow]")
+                console.print("[yellow]⚠️  Form may not have been added properly. Check the output file.[/yellow]")
         
-        # Write the updated content
-        with open(target_file, 'w', encoding='utf-8') as f:
-            f.write(content)
-            
-        console.print(f"📁 Updated: [bold]{target_file}[/bold]")
+        console.print(f"[green]📄 Updated: {target_file}[/green]")
         
-        # Show preview instructions
-        console.print(f"\n[bold cyan]🌐 Preview your {'animated' if state == 'on' else 'static'} page:[/bold cyan]")
+        # Update design analysis to track form operations
+        if os.path.exists(design_analysis_file):
+            try:
+                with open(design_analysis_file, 'r') as f:
+                    analysis_data = json.load(f)
+                
+                # Track form operations in a separate history
+                if 'form_history' not in analysis_data:
+                    analysis_data['form_history'] = []
+                
+                form_operation = {
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'operation': state,
+                    'theme': detected_theme,
+                    'method': 'claude_ai'
+                }
+                
+                if state == 'edit':
+                    form_operation.update({
+                        'form_type': form_type,
+                        'fields': fields_list,
+                        'cta_text': cta,
+                        'style': style
+                    })
+                
+                analysis_data['form_history'].append(form_operation)
+                
+                with open(design_analysis_file, 'w') as f:
+                    json.dump(analysis_data, f, indent=2)
+                    
+                console.print("[cyan]📊 Form operation tracked in design analysis[/cyan]")
+                
+            except Exception as e:
+                console.print(f"[yellow]⚠️  Could not update design analysis: {e}[/yellow]")
+        
+        # Show preview instructions and usage stats
+        console.print("\n[bold green]✅ Form processing complete![/bold green]")
+        console.print("\n[bold cyan]🌐 Preview your updated page:[/bold cyan]")
         console.print(f"  [bold]cd {os.path.dirname(target_file)}[/bold]")
         console.print("  [bold]python -m http.server 3000[/bold]")
         console.print("  Then open [bold]http://localhost:3000[/bold] in your browser")
         
+        # Display usage stats
+        if stats:
+            console.print(f"\n[dim]Tokens: {stats.get('input_tokens', 0)} in, {stats.get('output_tokens', 0)} out | Cost: ~${stats.get('estimated_cost', 0.0):.4f}[/dim]")
+            
     except Exception as e:
-        console.print(f"[red]❌ Error controlling animations: {e}[/red]")
+        console.print(f"[red]❌ Error processing forms: {e}[/red]")
+        console.print("\n[yellow]💡 Form control tips:[/yellow]")
+        console.print("• Use [cyan]ccux form on[/cyan] to add basic contact form")
+        console.print("• Use [cyan]ccux form off[/cyan] to remove all forms while preserving design")
+        console.print("• Use [cyan]ccux form edit --type newsletter --fields email[/cyan] for custom forms")
+        console.print("• Make sure you have Claude CLI installed and accessible")
         raise typer.Exit(1)
+
 
 @app.command()
 def help(
@@ -1458,7 +2383,7 @@ def help(
         table.add_row("gen", "Generate landing page", "ccux gen --desc 'AI tool' --theme brutalist")
         table.add_row("regen", "Regenerate specific sections", "ccux regen --section hero,pricing")
         table.add_row("theme", "Change design theme", "ccux theme minimal")
-        table.add_row("animate", "Control page animations", "ccux animate off")
+        table.add_row("form", "Advanced form control with customization", "ccux form edit --type contact")
         table.add_row("help", "Show detailed help", "ccux help themes")
         table.add_row("version", "Show version info", "ccux version")
         
@@ -1606,14 +2531,29 @@ def help(
         console.print("• [bold]Custom file[/bold]: [cyan]ccux theme minimal --file custom/page.html[/cyan]")
         console.print("  Change theme of specific file")
         
+        # Form control
+        console.print("\n[bold green]Form Management[/bold green]")
+        console.print("• [bold]Basic forms[/bold]: [cyan]ccux form on[/cyan]")
+        console.print("  Add basic contact forms to appropriate sections")
+        console.print("• [bold]Remove forms[/bold]: [cyan]ccux form off[/cyan]")
+        console.print("  Remove all forms and use mailto: links")
+        console.print("• [bold]Custom contact form[/bold]: [cyan]ccux form edit --type contact --fields name,email,message[/cyan]")
+        console.print("  Create detailed contact form with specific fields")
+        console.print("• [bold]Newsletter signup[/bold]: [cyan]ccux form edit --type newsletter --style inline[/cyan]")
+        console.print("  Simple email signup form embedded in sections")
+        console.print("• [bold]Modal signup form[/bold]: [cyan]ccux form edit --type signup --style modal --cta 'Join Beta'[/cyan]")
+        console.print("  Registration form in popup modal with custom CTA text")
+
         # Animation control
         console.print("\n[bold green]Animation Control[/bold green]")
-        console.print("• [bold]Disable animations[/bold]: [cyan]ccux animate off[/cyan]")
-        console.print("  Turn off all animations for better performance")
-        console.print("• [bold]Enable animations[/bold]: [cyan]ccux animate on[/cyan]")
-        console.print("  Turn on theme-based animations")
-        console.print("• [bold]Custom file[/bold]: [cyan]ccux animate off --file custom.html[/cyan]")
-        console.print("  Control animations in specific file\n")
+        console.print("• [bold]Smart animation addition[/bold]: [cyan]ccux animate on[/cyan]")
+        console.print("  Analyze current design and add theme-appropriate animations")
+        console.print("• [bold]Remove animation code[/bold]: [cyan]ccux animate off[/cyan]")
+        console.print("  Remove only animation code (preserves essential styling)")
+        console.print("• [bold]Granular control[/bold]: [cyan]ccux animate edit --target hero --action add[/cyan]")
+        console.print("  Add/remove/modify animations for specific elements")
+        console.print("• [bold]Custom file[/bold]: [cyan]ccux animate on --file custom.html[/cyan]")
+        console.print("  Target specific files for animation control\n")
         
     elif topic == "workflows":
         console.print("[bold blue]Step-by-Step Workflows[/bold blue]\n")
@@ -1667,6 +2607,8 @@ def help(
             "Review initial version",
             "Add competitor research: ccux gen --desc 'Product' --url https://competitor.com",
             "Refine individual sections: ccux regen --section pricing --desc 'Updated positioning'",
+            "Add appropriate animations: ccux animate on",
+            "Fine-tune animations: ccux animate edit --target hero --action modify",
             "Experiment with themes: ccux theme aesthetic, ccux theme terminal",
             "Final polish: ccux regen --section hero,footer"
         ]

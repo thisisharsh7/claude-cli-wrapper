@@ -64,6 +64,7 @@ ccux gen [OPTIONS]
 - `--framework, -f [html|react]`: Output framework (default: html)
 - `--theme, -t [minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated]`: Design theme (default: minimal)
 - `--no-design-thinking`: Skip full design thinking process for faster generation
+- `--include-forms`: Include contact forms in the landing page
 - `--output, -o DIR`: Output directory (default: output/landing-page)
 
 **Interactive Mode (Recommended):**
@@ -106,6 +107,9 @@ ccux gen --desc "AI-powered project management tool"
 
 # With custom reference URLs
 ccux gen --url https://linear.app --desc "Project management tool"
+
+# With contact forms included
+ccux gen --desc "Contact us for services" --include-forms
 ```
 
 ---
@@ -142,6 +146,90 @@ ccux regen --section hero --desc "Updated product description"
 # Regenerate specific file
 ccux regen --section pricing --file custom/page.html
 ```
+
+---
+
+### `ccux editgen`
+Edit specific parts of existing landing page while preserving design theme and layout.
+
+**Usage:**
+```bash
+ccux editgen INSTRUCTION [OPTIONS]
+```
+
+**Arguments:**
+- `INSTRUCTION`: Specific edit instruction describing what to change
+
+**Options:**
+- `--desc, -d TEXT`: Product description (auto-detected if not provided)
+- `--file, -f FILE`: Path to landing page file
+- `--output, -o DIR`: Output directory  
+- `--sections, -s TEXT`: Specific sections to focus changes on (comma-separated)
+
+**Examples:**
+```bash
+# Basic content edits
+ccux editgen "Change the hero headline to 'Revolutionary AI Platform'"
+ccux editgen "Update the pricing to show monthly rates instead of annual"
+ccux editgen "Replace the call-to-action button text with 'Start Free Trial'"
+
+# Focused section edits
+ccux editgen "Add a new feature about real-time collaboration" --sections features
+ccux editgen "Update testimonials with quotes from enterprise clients" --sections testimonials
+
+# Content replacement and additions
+ccux editgen "Replace the hero image with a product screenshot"
+ccux editgen "Add a FAQ section explaining the pricing model"
+ccux editgen "Change the company description to focus on AI automation"
+
+# Target specific files
+ccux editgen "Update contact information" --file custom/page.html
+ccux editgen "Add mobile app download links" --file portfolio/index.html
+
+# Complex edits with section targeting
+ccux editgen "Redesign the features section to use a grid layout with icons" --sections features
+ccux editgen "Update hero and pricing sections for enterprise focus" --sections hero,pricing
+```
+
+**Description:** The editgen command provides precise, targeted editing of landing pages while maintaining the overall design theme, layout, and functionality. Unlike regenerating entire sections, editgen makes surgical changes to specific content, text, or elements as requested.
+
+**Key Features:**
+- **Theme Preservation**: Automatically detects and preserves the existing design theme (minimal, brutalist, corporate, etc.)
+- **Layout Integrity**: Maintains overall page structure, spacing, and visual hierarchy
+- **Functionality Protection**: Preserves all navigation, forms, CTAs, animations, and interactive elements
+- **Smart Context**: Auto-detects product description and page context from existing design analysis
+- **Section Targeting**: Optional focus on specific sections while preserving others
+- **Edit History**: Tracks all edits in design analysis for audit trail
+- **Content Intelligence**: Makes contextually appropriate changes that fit the existing tone and style
+
+**What You Can Edit:**
+- Text content, headlines, copy, and messaging
+- Pricing information and call-to-action text  
+- Feature descriptions and benefits
+- Testimonials and customer quotes
+- Company descriptions and value propositions
+- Contact information and links
+- Image alt text and descriptions
+- Add new content sections or elements
+- Modify existing content structure within sections
+
+**What Stays Preserved:**
+- Design theme styling (colors, fonts, spacing, shadows)
+- Overall layout and visual hierarchy
+- Navigation system and smooth scrolling
+- Form functionality and CTA links
+- Animation system and interactive elements  
+- Responsive breakpoints and mobile compatibility
+- Section markers for future regeneration
+- All CSS classes and design system patterns
+
+**Usage Tips:**
+- Be specific in your edit instructions for best results
+- Use `--sections` to focus changes and avoid unintended modifications
+- The command auto-detects theme and context from existing files
+- Edit history is preserved in design_analysis.json for tracking changes
+- Works with both HTML and React framework outputs
+- Can handle both simple text changes and complex content restructuring
 
 ---
 
@@ -189,46 +277,74 @@ ccux theme illustrated --file education-platform.html
 
 ---
 
-### `ccux animate`
-Control animations in existing landing pages.
+### `ccux form`
+Advanced form control with detailed customization including type, fields, styling, and placement.
 
 **Usage:**
 ```bash
-ccux animate STATE [OPTIONS]
+ccux form STATE [OPTIONS]
 ```
 
 **Arguments:**
-- `STATE`: Animation state (on|off)
+- `STATE`: Form inclusion state (on|off|edit)
 
 **Options:**
 - `--file, -f FILE`: Path to landing page file
 - `--output, -o DIR`: Output directory
+- `--type, -t TYPE`: Form type (contact|newsletter|signup|custom)
+- `--fields FIELDS`: Comma-separated field list (name,email,phone,message,company,website,subject)
+- `--style, -s STYLE`: Form style (inline|modal|sidebar|fullpage)
+- `--cta TEXT`: Custom CTA button text
 
 **Examples:**
 ```bash
-# Disable all animations (better performance/accessibility)
-ccux animate off
+# Basic form control
+ccux form on                                    # Add basic contact forms
+ccux form off                                   # Remove all forms
 
-# Enable theme-based animations
-ccux animate on
+# Advanced form customization
+ccux form edit --type contact --fields name,email,message --cta "Get In Touch"
+ccux form edit --type newsletter --fields email --style inline --cta "Subscribe Now"
+ccux form edit --type signup --fields name,email,phone --style modal --cta "Join Beta"
+ccux form edit --type custom --fields name,email,company,website --style fullpage
 
-# Control animations in specific file
-ccux animate off --file custom/page.html
-
-# Control animations in custom output directory
-ccux animate on --output output/custom-page
+# Target specific files
+ccux form on --file custom/page.html
+ccux form edit --type contact --fields name,email --file portfolio.html
 ```
 
-**Description:** Controls animations in generated landing pages through CLI commands instead of web interface toggles. When animations are turned off, all animations and transitions are disabled via CSS classes for better performance and accessibility. When turned on, animations are restored based on the detected theme's animation specifications.
+**Form Types:**
+- **contact**: General contact form with name, email, message fields
+- **newsletter**: Simple email signup form for subscriptions
+- **signup**: Registration form with multiple user fields
+- **custom**: Specify your own field configuration
+
+**Form Fields Available:**
+- `name`: Full name input field
+- `email`: Email address (required for most forms)
+- `phone`: Phone number with tel input type
+- `message`: Textarea for longer messages
+- `company`: Company/organization name
+- `website`: Website URL with validation
+- `subject`: Subject line for contact forms
+
+**Form Styles:**
+- **inline**: Embedded directly in page sections (hero, footer, contact)
+- **modal**: Popup modal overlay with click-to-open trigger
+- **sidebar**: Fixed position sidebar form (right side of screen)
+- **fullpage**: Dedicated full-width form section with prominent placement
 
 **Key Features:**
-- **CLI-first control**: No web interface toggles needed
-- **Performance optimization**: Complete animation disable for faster loading
-- **Accessibility support**: Easy way to disable animations for motion-sensitive users
-- **Theme-aware**: Restores appropriate animations based on detected design theme
-- **File targeting**: Control animations in specific files or directories
+- **Interactive Setup**: Run `ccux form edit` without arguments for guided form creation
+- **Theme Integration**: All forms automatically match page theme (brutalist, minimal, corporate, etc.)
+- **Smart Field Validation**: Proper input types, required attributes, and accessibility labels
+- **Custom CTA Text**: Personalize button text for your brand voice
+- **Mobile Responsive**: Forms adapt to all screen sizes with proper breakpoints
+- **Accessibility Compliant**: WCAG guidelines with proper labeling and focus states
+- **CLI-first Control**: Complete form management without touching code
 
 ---
+
 
 ### `ccux help`
 Show comprehensive help and usage examples with different topics.

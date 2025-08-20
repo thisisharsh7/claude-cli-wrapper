@@ -11,16 +11,27 @@ except ImportError:
     def get_theme_design_system_rules(theme_name: str) -> str:
         return f"Generate design system for {theme_name} theme."
 
-def get_functional_requirements() -> str:
+def get_functional_requirements(include_forms: bool = False) -> str:
     """Get standard functional requirements for all HTML generation prompts"""
-    return """
+    form_requirements = ""
+    if include_forms:
+        form_requirements = """
+   - Include basic contact form with email input and submit button (action="#" method="POST")"""
+    
+    return f"""
 CRITICAL FUNCTIONAL REQUIREMENTS:
 
 1. Navigation System (MANDATORY):
    - Include sticky navbar with smooth scroll-to-section links (#hero, #features, #pricing, etc.)
    - Add mobile hamburger menu with JavaScript toggle functionality
    - Every major section MUST have an id attribute for navigation
-   - Use onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" for mobile toggle
+   - Mobile menu implementation MUST include:
+     * Hamburger button with id="mobile-menu-button" and proper aria attributes
+     * Mobile menu with id="mobile-menu" (initially hidden with 'hidden' class)
+     * Toggle function: onclick="toggleMobileMenu()" 
+     * JavaScript function: function toggleMobileMenu() {{ const menu = document.getElementById('mobile-menu'); menu.classList.toggle('hidden'); }}
+     * Proper aria-expanded and aria-controls attributes for accessibility
+     * Close menu when clicking nav links: onclick="document.getElementById('mobile-menu').classList.add('hidden')"
    - Include smooth scrolling: html {{ scroll-behavior: smooth; }}
 
 2. Responsive Design (REQUIRED):
@@ -30,10 +41,33 @@ CRITICAL FUNCTIONAL REQUIREMENTS:
    - Test all sections at different breakpoints
 
 3. Working CTAs (REQUIRED):
-   - Primary CTA must be functional: use mailto: link or working form with action="#"
-   - Include basic contact form with email input and submit button
+   - Primary CTA must be functional: use mailto: link for contact{form_requirements}
    - Secondary CTAs use real links (href="#contact" or "mailto:contact@example.com")
    - All buttons must have hover states and keyboard accessibility
+
+4. JavaScript Requirements (MANDATORY):
+   - MUST include this exact JavaScript function in a <script> tag before closing </body>:
+   
+   function toggleMobileMenu() {{
+     const menu = document.getElementById('mobile-menu');
+     const button = document.getElementById('mobile-menu-button');
+     const isExpanded = menu.classList.contains('hidden');
+     
+     menu.classList.toggle('hidden');
+     if (button) {{
+       button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+     }}
+   }}
+   
+   // Close mobile menu when clicking nav links
+   document.addEventListener('DOMContentLoaded', function() {{
+     const mobileNavLinks = document.querySelectorAll('#mobile-menu a[href^="#"]');
+     mobileNavLinks.forEach(link => {{
+       link.addEventListener('click', () => {{
+         document.getElementById('mobile-menu').classList.add('hidden');
+       }});
+     }});
+   }});
 """
 
 def get_animation_requirements() -> str:
@@ -444,7 +478,7 @@ Output JSON only:
 }}
 Rules: Use AIDA/PAS style, focus on benefits, strong CTAs, address objections, keep tone consistent.'''
 
-def implementation_prompt(product_description, copy_content, framework, theme, design_data) -> str:
+def implementation_prompt(product_description, copy_content, framework, theme, design_data, include_forms: bool = False) -> str:
     """Final implementation prompt that consolidates all previous steps"""
     # Extract only what's essential from previous stages
     design_system = design_data.get('design_system', {})
@@ -486,7 +520,13 @@ CRITICAL FUNCTIONAL REQUIREMENTS:
    - Include sticky navbar with smooth scroll-to-section links (#hero, #features, #pricing, etc.)
    - Add mobile hamburger menu with JavaScript toggle functionality
    - Every major section MUST have an id attribute for navigation
-   - Use onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" for mobile toggle
+   - Mobile menu implementation MUST include:
+     * Hamburger button with id="mobile-menu-button" and proper aria attributes
+     * Mobile menu with id="mobile-menu" (initially hidden with 'hidden' class)
+     * Toggle function: onclick="toggleMobileMenu()" 
+     * JavaScript function: function toggleMobileMenu() {{ const menu = document.getElementById('mobile-menu'); menu.classList.toggle('hidden'); }}
+     * Proper aria-expanded and aria-controls attributes for accessibility
+     * Close menu when clicking nav links: onclick="document.getElementById('mobile-menu').classList.add('hidden')"
    - Include smooth scrolling: html {{ scroll-behavior: smooth; }}
 
 2. Responsive Design (REQUIRED):
@@ -496,8 +536,8 @@ CRITICAL FUNCTIONAL REQUIREMENTS:
    - Test all sections at different breakpoints
 
 3. Working CTAs (REQUIRED):
-   - Primary CTA must be functional: use mailto: link or working form with action="#"
-   - Include basic contact form with email input and submit button
+   - Primary CTA must be functional: use mailto: link for contact{" or working form with action='#'" if include_forms else ""}
+   {"   - Include basic contact form with email input and submit button (action='#' method='POST')" if include_forms else ""}
    - Secondary CTAs use real links (href="#contact" or "mailto:contact@example.com")
    - All buttons must have hover states and keyboard accessibility
 
@@ -514,7 +554,7 @@ Do NOT write about what you created - just output the raw HTML code.
 Your response should begin immediately with <!DOCTYPE html> and end with </html>.'''
 
 
-def landing_prompt(product_description, framework, theme, sections, design_data=None) -> str:
+def landing_prompt(product_description, framework, theme, sections, design_data=None, include_forms: bool = False) -> str:
     sections_str = ", ".join(sections) if sections else "hero, features, pricing, footer"
     
     # Dynamic content integration
@@ -559,7 +599,13 @@ CRITICAL FUNCTIONAL REQUIREMENTS:
    - Each nav link must use href="#section-id" for smooth scrolling to sections
    - Add mobile hamburger menu with toggle functionality
    - Every major section MUST have an id attribute (id="hero", id="features", id="pricing", etc.)
-   - Include JavaScript: onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+   - Mobile menu implementation MUST include:
+     * Hamburger button with id="mobile-menu-button" and proper aria attributes
+     * Mobile menu with id="mobile-menu" (initially hidden with 'hidden' class)
+     * Toggle function: onclick="toggleMobileMenu()" 
+     * JavaScript function: function toggleMobileMenu() {{ const menu = document.getElementById('mobile-menu'); menu.classList.toggle('hidden'); }}
+     * Proper aria-expanded and aria-controls attributes for accessibility
+     * Close menu when clicking nav links: onclick="document.getElementById('mobile-menu').classList.add('hidden')"
    - Add smooth scrolling CSS: html {{ scroll-behavior: smooth; }}
 
 2. Responsive Design (REQUIRED):
@@ -573,11 +619,11 @@ CRITICAL FUNCTIONAL REQUIREMENTS:
    - Make all images and text scale appropriately
 
 3. Working CTAs (REQUIRED):
-   - Primary CTA must be functional: Use mailto: link or implement working form
-   - Contact form example: action="#" method="POST" with email input and submit button
+   - Primary CTA must be functional: Use mailto: link for contact{" or implement working form" if include_forms else ""}
+   {"   - Contact form example: action='#' method='POST' with email input and submit button" if include_forms else ""}
    - Secondary CTAs use real links: href="#contact" or "mailto:contact@example.com"
    - All buttons must have hover states and be keyboard accessible (tabindex, focus states)
-   - Include proper form validation and user feedback
+   {"   - Include proper form validation and user feedback" if include_forms else ""}
 
 {get_animation_requirements()}
 
@@ -701,7 +747,7 @@ CRITICAL REGENERATION RULES:
 
 PRESERVE FUNCTIONALITY (MANDATORY):
 - Maintain all navigation links and smooth scrolling functionality
-- Keep mobile hamburger menu toggle intact: onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+- Keep mobile hamburger menu toggle intact: onclick="toggleMobileMenu()" with proper JavaScript function
 - Preserve all section IDs for navigation (id="hero", id="features", etc.)
 - Maintain responsive breakpoints: sm:, md:, lg: classes throughout
 - Keep form actions and CTA functionality working
@@ -721,3 +767,259 @@ PRESERVE ANIMATION SYSTEM (MANDATORY):
 CRITICAL: Output ONLY the HTML sections with START/END markers.
 Do NOT include any explanations, descriptions, or markdown formatting.
 Do NOT output a complete HTML document - just the requested sections.'''
+
+
+def editgen_prompt(product_desc, framework, theme, edit_instruction, existing_context=None, affected_sections=None) -> str:
+    """Smart targeted editing that preserves design theme and layout while making specific changes"""
+    context_analysis = ""
+    if existing_context:
+        context_analysis = "\n".join(
+            f"- {k}: {v[:60]}..." if isinstance(v,str) else f"- {k}: {v}"
+            for k,v in existing_context.items()
+        )
+    
+    affected_sections_text = ""
+    if affected_sections:
+        affected_sections_text = f"Focus changes on these sections: {', '.join(affected_sections)}"
+    
+    # Get theme-specific design rules (same as regeneration)
+    theme_rules = ""
+    if theme == "brutalist":
+        theme_rules = """
+BRUTALIST THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Use ONLY these colors: bg-black, bg-white, bg-red-600, bg-yellow-400
+- Use ONLY these text styles: font-black, font-bold, uppercase, tracking-tight, tracking-wide
+- REQUIRED classes on ALL sections: brutalist-border, brutalist-shadow
+- Typography: JetBrains Mono font (already loaded)
+- NO rounded corners, NO gradients, NO soft shadows
+- Use sharp, geometric layouts with high contrast
+- All buttons MUST have: brutalist-border brutalist-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none
+- All text MUST be UPPERCASE where appropriate
+- Color combinations: black text on white/yellow, white text on black/red"""
+    elif theme == "minimal":
+        theme_rules = """
+MINIMAL THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Use neutral colors: bg-white, bg-gray-50, bg-gray-100, text-gray-900, text-gray-600
+- Typography: font-normal, font-medium, font-semibold (NO font-black)
+- Generous whitespace: py-16, py-24, space-y-8, space-y-12
+- Subtle borders: border border-gray-200, rounded-lg
+- Clean buttons: bg-blue-600, hover:bg-blue-700, rounded-md, px-6 py-3
+- Minimal shadows: shadow-sm, shadow-md
+- Simple layouts with lots of breathing room"""
+    elif theme == "playful":
+        theme_rules = """
+PLAYFUL THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Bright colors: bg-pink-500, bg-purple-500, bg-blue-500, bg-yellow-400, bg-green-500
+- Rounded elements: rounded-xl, rounded-2xl, rounded-full
+- Fun typography: font-bold, font-extrabold
+- Organic shapes and bouncy animations: hover:scale-105, transition-transform
+- Colorful gradients: bg-gradient-to-r from-pink-500 to-purple-500
+- Playful spacing and asymmetrical layouts"""
+    elif theme == "corporate":
+        theme_rules = """
+CORPORATE THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Professional colors: bg-blue-900, bg-gray-800, bg-white, text-blue-900
+- Conservative typography: font-medium, font-semibold
+- Structured layouts: grid system, even spacing
+- Subtle shadows: shadow-lg, shadow-xl
+- Professional buttons: bg-blue-600, hover:bg-blue-700
+- Clean, trustworthy design patterns"""
+    elif theme == "terminal":
+        theme_rules = """
+TERMINAL THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Matrix colors: bg-black, bg-gray-900, text-green-400, text-green-300
+- Monospace font: font-mono (already loaded)
+- Terminal aesthetics: border-green-500, bg-green-500/10
+- Command-line elements: $ prompts, code blocks
+- Pixelated/blocky design: sharp edges, no rounded corners
+- Glowing effects: animate-pulse, text-green-400"""
+    elif theme == "dark":
+        theme_rules = """
+DARK THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Dark backgrounds: bg-gray-900, bg-gray-800, bg-black
+- Light text: text-white, text-gray-100, text-gray-300
+- Dark accent colors: bg-blue-600, bg-purple-600, bg-indigo-600
+- Subtle borders: border-gray-700, border-gray-600
+- High contrast for accessibility"""
+    elif theme == "morphism":
+        theme_rules = """
+MORPHISM THEME REQUIREMENTS - MUST FOLLOW EXACTLY:
+- Soft backgrounds: bg-gray-100, bg-white, bg-gradient-to-br
+- Glass effects: backdrop-blur-sm, bg-white/20, border border-white/20
+- Soft shadows: shadow-xl, shadow-2xl with blur
+- Rounded corners: rounded-xl, rounded-2xl
+- Subtle colors with transparency: bg-blue-500/10, text-gray-700"""
+    else:
+        theme_rules = f"Follow {theme} theme guidelines with appropriate colors and styling"
+    
+    return f'''You are a precision content editor for existing landing pages.
+
+Product: {product_desc}
+Framework: {framework}
+Theme: {theme}
+Edit Request: {edit_instruction}
+
+Existing Context:
+{context_analysis or "No specific context provided"}
+
+{affected_sections_text}
+
+{theme_rules}
+
+EDIT INSTRUCTION:
+{edit_instruction}
+
+CRITICAL EDITING RULES:
+1. PRESERVE DESIGN THEME - The {theme} theme styling MUST remain unchanged
+2. PRESERVE LAYOUT - Overall page structure and visual hierarchy must stay intact
+3. PRESERVE FUNCTIONALITY - All navigation, forms, CTAs, and interactions must work
+4. PRESERVE ANIMATIONS - All existing animation systems must remain functional
+5. MAKE ONLY REQUESTED CHANGES - Change only what was specifically requested
+6. MAINTAIN CONSISTENCY - Any new content must match existing design patterns exactly
+
+WHAT TO PRESERVE (MANDATORY):
+- All CSS classes, color schemes, and styling patterns from the {theme} theme
+- Navigation system: navbar, mobile menu, smooth scrolling, section IDs
+- Responsive breakpoints and mobile compatibility
+- Form functionality and CTA links
+- Animation system: keyframes, JavaScript controllers, data attributes
+- Section markers (<!-- START: section_name --> and <!-- END: section_name -->)
+- Overall visual hierarchy and spacing
+
+WHAT YOU CAN CHANGE:
+- Text content, copy, and messaging (while maintaining tone and theme)
+- Images and their alt text (using relative paths ../filename.jpg)
+- Content structure within sections (while preserving layout patterns)
+- Add/remove content elements if explicitly requested
+- Adjust specific styling only if explicitly requested
+
+CRITICAL FUNCTIONALITY PRESERVATION:
+- Navigation: Keep all href="#section" links working
+- Mobile Menu: Maintain onclick="toggleMobileMenu()" with proper JavaScript function
+- Smooth Scrolling: Keep html {{ scroll-behavior: smooth; }} CSS
+- Form Actions: Preserve all form action="#" method="POST" attributes
+- Button Interactions: Maintain all hover states and onclick events
+- Section IDs: Keep all id attributes for navigation (id="hero", id="features", etc.)
+- Animation Controls: Preserve animation toggle functionality and localStorage
+- Accessibility: Maintain ARIA labels, alt text, and keyboard navigation
+
+OUTPUT FORMAT:
+Generate the complete, updated HTML document with your changes.
+Start with <!DOCTYPE html> and end with </html>.
+Include all preserved functionality and styling.
+Do NOT add explanations or describe your changes.
+Your response should be the updated HTML code only.'''
+
+
+
+def form_on_prompt(product_desc: str, existing_html: str, detected_theme: str) -> str:
+    """Generate concise prompt for adding contact form with correct placement"""
+    return f'''Add a professional contact form to the landing page below. 
+Theme: {detected_theme}
+
+PRODUCT:
+{product_desc}
+
+CURRENT HTML:
+{existing_html}
+
+REQUIREMENTS:
+1. PRESERVE DESIGN:
+   - Do NOT edit existing text, images, layout, or styles
+   - Only ADD form code (HTML/CSS/JS)
+   - Keep all existing features (nav, CTAs, menus, animations)
+
+2. FORM:
+   - Fields: Name, Email, Message
+   - Analyze the HTML and place form in the correct section:
+     * Contact → inside contact section
+     * Footer → if no dedicated contact section
+     * Hero → if form is meant to capture leads quickly
+   - Semantic HTML with labels, placeholders, accessibility
+   - Required attributes + simple JS validation
+
+3. THEME:
+   - Match {detected_theme} style (colors, fonts, spacing)
+   - Seamlessly integrate into visual hierarchy
+
+4. RESPONSIVE:
+   - Mobile, tablet, desktop friendly
+   - Proper spacing at all sizes
+
+5. FUNCTION:
+   - action="#" method="POST"
+   - JS validation + success message
+   - Hover/focus states
+
+6. ACCESSIBILITY:
+   - ARIA labels, associations
+   - Keyboard navigation
+   - Contrast ratios + screen reader friendly
+
+OUTPUT:
+Return full HTML starting with <!DOCTYPE html> and ending with </html>. 
+No explanations, only updated code.'''
+
+def form_off_prompt(existing_html: str) -> str:
+    """Generate concise prompt for removing all forms from landing page"""
+    return f'''Remove all forms from the landing page below while keeping design and functionality intact.
+
+CURRENT HTML:
+{existing_html}
+
+REQUIREMENTS:
+- Do NOT alter existing design, text, images, layout, or non-form features
+- Delete all <form> elements, inputs, textareas, selects, and related JS/CSS
+- Keep non-form buttons (CTAs, nav, etc.)
+- Clean unused form-specific CSS/JS and empty containers
+- Maintain section structure, spacing, and layout integrity
+
+OUTPUT:
+Return the full HTML (<!DOCTYPE html> … </html>) with forms removed.
+Only output updated code, no explanations.'''
+
+
+def form_edit_prompt(existing_html: str, form_type: str, fields: list, style: str = None, cta: str = None, detected_theme: str = "minimal") -> str:
+    """Prompt for inserting/editing forms with correct placement in landing page"""
+    field_descriptions = {
+        'name': 'Full name',
+        'email': 'Email address',
+        'phone': 'Phone number',
+        'message': 'Message textarea',
+        'company': 'Company/organization',
+        'website': 'Website URL',
+        'subject': 'Subject line'
+    }
+
+    fields_list = ', '.join([field_descriptions.get(field, field) for field in fields])
+    cta_text = cta or "Submit"
+    style_context = f" ({style} style)" if style else ""
+
+    return f'''Insert a {form_type} form{style_context} into the landing page below.
+Theme: {detected_theme}
+
+CURRENT HTML:
+{existing_html}
+
+FORM DETAILS:
+- Fields: {fields_list}
+- CTA: "{cta_text}"
+- Style: {style or 'inline (embedded)'}
+
+PLACEMENT RULES:
+- Analyze the HTML structure to find the correct section:
+  * Contact → place in contact section
+  * Newsletter → place in hero/footer
+  * Signup → place prominently (hero or dedicated signup area)
+- Replace old forms if present, otherwise insert into the right section
+- Preserve existing design and styling (do not alter theme)
+
+OTHER RULES:
+- Use semantic HTML with validation + accessibility
+- Keep responsive behavior
+- Form action="#" method="POST"
+- Show success/error messages
+
+OUTPUT:
+Return the full HTML (<!DOCTYPE html> … </html>) with the form correctly placed.
+Only output updated code, no explanations.'''
