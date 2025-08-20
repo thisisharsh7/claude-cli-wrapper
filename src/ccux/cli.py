@@ -238,17 +238,17 @@ def run_claude_with_progress(prompt: str, description: str = "Claude Code is thi
     return full_output, usage_stats
 
 def summarize_long_description(desc: str) -> str:
-    """Summarize product description if longer than 100 words"""
+    """Summarize product description if longer than 300 words"""
     word_count = len(desc.split())
     
-    if word_count <= 100:
+    if word_count <= 300:
         return desc
     
-    console.print(f"[yellow]📝 Description has {word_count} words, summarizing to 100-150 words...[/yellow]")
+    console.print(f"[yellow]📝 Description has {word_count} words, summarizing to 200-300 words...[/yellow]")
     
     summarization_prompt = f"""You are given a long product description. 
-If the text is fewer than 100 words, return it unchanged. 
-If it is longer than 100 words, summarize it into 100–150 words while keeping only the most important details:
+If the text is fewer than 300 words, return it unchanged. 
+If it is longer than 300 words, summarize it into 200–300 words while keeping only the most important details:
 
 - Problem it solves
 - Target user
@@ -268,6 +268,92 @@ Product description to summarize:
     except Exception as e:
         console.print(f"[yellow]⚠️  Failed to summarize description: {e}. Using original.[/yellow]")
         return desc
+
+
+def validate_html_output(html_content: str) -> bool:
+    """Validate that HTML output is not an error message"""
+    if not html_content or len(html_content.strip()) < 50:
+        return False
+    
+    # Check for common error patterns first
+    error_patterns = [
+        "execution error",
+        "error occurred", 
+        "failed to generate",
+        "timeout",
+        "claude code failed"
+    ]
+    
+    content_lower = html_content.lower()
+    for pattern in error_patterns:
+        if pattern in content_lower:
+            return False
+    
+    # Check for basic HTML indicators (more lenient)
+    html_indicators = [
+        "<!doctype html",
+        "<html",
+        "<head>",
+        "<body>",
+        "<div",
+        "<section",
+        "tailwindcss"
+    ]
+    
+    # Must have at least 2 HTML indicators
+    found_indicators = 0
+    for indicator in html_indicators:
+        if indicator in content_lower:
+            found_indicators += 1
+    
+    return found_indicators >= 2
+
+def extract_brand_name(description: str) -> str:
+    """Extract brand/product name from description for display (max 10 words)"""
+    import re
+    
+    # Common patterns for product names
+    patterns = [
+        r'^([A-Z][A-Za-z0-9\s]{1,30})\s*[-–—]\s*',  # "ProductName - description"
+        r'^([A-Z][A-Za-z0-9\s]{1,30})\s*\([^)]+\)',  # "ProductName (description)"  
+        r'^([A-Z][A-Za-z0-9\s]{1,30})\s+is\s+',      # "ProductName is a..."
+        r'^([A-Z][A-Za-z0-9\s]{1,30})\s*:\s*',       # "ProductName: description"
+        r'^([A-Z][A-Za-z0-9\s]{1,30})\s*,\s*',       # "ProductName, description"
+    ]
+    
+    for pattern in patterns:
+        match = re.match(pattern, description.strip())
+        if match:
+            brand = match.group(1).strip()
+            if len(brand.split()) <= 10:
+                return brand
+    
+    # Enhanced fallback: look for capitalized words that might be brand names
+    words = description.strip().split()
+    
+    # Look for sequences of capitalized words (likely brand names)
+    brand_candidates = []
+    current_brand = []
+    
+    for word in words[:15]:  # Check first 15 words only
+        if word[0].isupper() or word.isdigit() or any(c.isupper() for c in word):
+            current_brand.append(word)
+        else:
+            if current_brand and len(current_brand) <= 3:  # Max 3 words for brand name
+                brand_candidates.append(' '.join(current_brand))
+            current_brand = []
+    
+    # Add final candidate if exists
+    if current_brand and len(current_brand) <= 3:
+        brand_candidates.append(' '.join(current_brand))
+    
+    # Return the first reasonable brand candidate
+    for candidate in brand_candidates:
+        if len(candidate.split()) <= 4 and len(candidate) > 1:
+            return candidate
+    
+    # Final fallback: first 8 words with ellipsis
+    return ' '.join(words[:8]) + ('...' if len(words) > 8 else '')
 
 def safe_json_parse(text: str) -> Dict[str, Any]:
     """Safely parse JSON from Claude output"""
@@ -678,7 +764,8 @@ def gen(
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
-    console.print(f"[bold blue]🎨 Generating landing page for: {desc}[/bold blue]")
+    brand_display = extract_brand_name(desc)
+    console.print(f"[bold blue]🎨 Generating landing page for: {brand_display}[/bold blue]")
     console.print(f"Framework: [green]{framework}[/green] | Theme: [green]{theme}[/green]")
     
     if no_design_thinking:
@@ -779,22 +866,20 @@ def gen(
                 screenshot_results = capture_multiple_references(ref_urls, output_dir)
                 screenshot_refs = [(url, screenshot_path) for url, _, screenshot_path in screenshot_results]
             
-            # Phase 3: Deep Product Understanding
-            console.print("\n[bold]Phase 3: Deep Product Understanding[/bold]")
+            # Phase 3: Product Analysis
+            console.print("\n[bold]Phase 3: Product Analysis[/bold]")
             prompt = deep_product_understanding_prompt(desc)
             product_output, _ = run_claude_with_progress(prompt, "Analyzing product positioning...")
             product_understanding = safe_json_parse(product_output)
             
-            # Phase 4: UX Analysis
+            # Phase 4: UX Research
+            ux_analysis = {}
             if screenshot_refs:
-                console.print("\n[bold]Phase 4: Competitive UX Analysis[/bold]")
-                # Extract just the screenshot paths from the tuples
+                console.print("\n[bold]Phase 4: UX Research[/bold]")
                 screenshot_paths = [screenshot_path for url, screenshot_path in screenshot_refs]
                 prompt = ux_analysis_prompt(desc, screenshot_paths)
                 ux_output, _ = run_claude_with_progress(prompt, "Analyzing competitor UX patterns...")
                 ux_analysis = safe_json_parse(ux_output)
-            else:
-                ux_analysis = {}
             
             # Phase 5: Empathy & User Research
             console.print("\n[bold]Phase 5: User Empathy Mapping[/bold]")
@@ -811,29 +896,29 @@ def gen(
             # Phase 7: Content Strategy
             console.print("\n[bold]Phase 7: Content Strategy[/bold]")
             prompt = ideate_prompt(desc, user_research, site_flow)
-            ideate_output, _ = run_claude_with_progress(prompt, "Developing content strategy...")
-            content_strategy = safe_json_parse(ideate_output)
+            strategy_output, _ = run_claude_with_progress(prompt, "Developing content strategy...")
+            content_strategy = safe_json_parse(strategy_output)
             
-            # Phase 8: Wireframes
-            console.print("\n[bold]Phase 8: Wireframe Validation[/bold]")
-            prompt = wireframe_prompt(desc, content_strategy, site_flow)
-            wireframe_output, _ = run_claude_with_progress(prompt, "Creating wireframes...")
+            # Phase 8: Wireframes (depends on content strategy)
+            console.print("\n[bold]Phase 8: Wireframes[/bold]")
+            wireframe_prompt_call = wireframe_prompt(desc, content_strategy, site_flow)
+            wireframe_output, _ = run_claude_with_progress(wireframe_prompt_call, "Creating wireframes...")
             wireframes = safe_json_parse(wireframe_output)
             
             # Phase 9: Design System
             console.print("\n[bold]Phase 9: Design System[/bold]")
-            prompt = design_system_prompt(desc, wireframes, content_strategy, theme)
-            design_output, _ = run_claude_with_progress(prompt, "Building design system...")
+            design_prompt_call = design_system_prompt(desc, wireframes, content_strategy, theme)
+            design_output, _ = run_claude_with_progress(design_prompt_call, "Building design system...")
             design_system = safe_json_parse(design_output)
             
-            # Phase 10: High-Fidelity Design
-            console.print("\n[bold]Phase 10: High-Fidelity Design[/bold]")
+            # Phase 10: Hi-Fi Design
+            console.print("\n[bold]Phase 10: Hi-Fi Design[/bold]")
             prompt = high_fidelity_design_prompt(desc, design_system, wireframes, content_strategy)
             hifi_output, _ = run_claude_with_progress(prompt, "Creating high-fidelity design...")
             hifi_design = safe_json_parse(hifi_output)
             
-            # Phase 11: Final Copy Generation
-            console.print("\n[bold]Phase 11: Final Copy Generation[/bold]")
+            # Phase 11: Copy Generation
+            console.print("\n[bold]Phase 11: Copy Generation[/bold]")
             prompt = prototype_prompt(desc, content_strategy, design_system, wireframes)
             copy_output, _ = run_claude_with_progress(prompt, "Generating final copy...")
             final_copy = safe_json_parse(copy_output)
@@ -847,8 +932,33 @@ def gen(
                 'wireframes': wireframes,
                 'content_strategy': content_strategy
             }
-            prompt = implementation_prompt(desc, final_copy, framework, theme, design_data)
-            code_output, _ = run_claude_with_progress(prompt, "Implementing landing page...")
+            # Implementation with error detection and retry
+            max_attempts = 2
+            code_output = None
+            
+            for attempt in range(max_attempts):
+                try:
+                    attempt_desc = "Implementing landing page..." if attempt == 0 else f"Regenerating landing page (attempt {attempt + 1})..."
+                    prompt = implementation_prompt(desc, final_copy, framework, theme, design_data)
+                    code_output, _ = run_claude_with_progress(prompt, attempt_desc)
+                    
+                    # Validate the output
+                    cleaned_output = strip_code_blocks(code_output)
+                    if validate_html_output(cleaned_output) or framework == 'react':
+                        break
+                    else:
+                        if attempt < max_attempts - 1:
+                            console.print("[yellow]⚠️  Generated output appears to be an error message. Retrying...[/yellow]")
+                            continue
+                        else:
+                            console.print("[red]❌ Failed to generate valid output after multiple attempts[/red]")
+                            
+                except Exception as e:
+                    if attempt < max_attempts - 1:
+                        console.print(f"[yellow]⚠️  Implementation failed: {e}. Retrying...[/yellow]")
+                        continue
+                    else:
+                        raise e
             
             # Save all outputs
             analysis_data = {
@@ -866,10 +976,12 @@ def gen(
             with open(os.path.join(output_dir, 'design_analysis.json'), 'w') as f:
                 json.dump(analysis_data, f, indent=2)
             
-            # Save code output
+            # Save code output with final validation
+            cleaned_code = strip_code_blocks(code_output)
+            
             if framework == 'react':
                 with open(os.path.join(output_dir, 'App.jsx'), 'w') as f:
-                    f.write(strip_code_blocks(code_output))
+                    f.write(cleaned_code)
                 
                 html_shell = f'''<!DOCTYPE html>
 <html lang="en">
@@ -891,8 +1003,16 @@ def gen(
                 with open(os.path.join(output_dir, 'index.html'), 'w') as f:
                     f.write(html_shell)
             else:
+                # Final validation before writing HTML
+                if not validate_html_output(cleaned_code):
+                    console.print("[red]⚠️  Warning: Generated HTML may contain errors[/red]")
+                    # Save the raw output for debugging
+                    with open(os.path.join(output_dir, 'debug_output.txt'), 'w') as f:
+                        f.write(code_output)
+                    console.print(f"[yellow]Debug output saved to: {output_dir}/debug_output.txt[/yellow]")
+                
                 with open(os.path.join(output_dir, 'index.html'), 'w') as f:
-                    f.write(strip_code_blocks(code_output))
+                    f.write(cleaned_code)
             
             console.print(f"\n[bold green]✅ Comprehensive landing page generated successfully![/bold green]")
             console.print(f"📁 Output saved to: [bold]{output_dir}[/bold]")
