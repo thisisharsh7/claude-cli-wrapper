@@ -1306,6 +1306,125 @@ def theme(
         raise typer.Exit(1)
 
 @app.command()
+def animate(
+    state: str = typer.Argument(..., help="Animation state (on|off)"),
+    file: Optional[str] = typer.Option(None, "--file", "-f", help="Path to landing page file"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory")
+):
+    """Control animations in landing pages
+    
+    Turn animations on or off in existing landing pages. When turned on,
+    applies design-specific animations based on the detected theme.
+    
+    Examples:
+      ccux animate off                    # Disable all animations
+      ccux animate on                     # Enable theme-based animations  
+      ccux animate off --file custom.html # Target specific file
+    """
+    
+    config = Config()
+    output_dir = output_dir or config.get('output_dir', 'output/landing-page')
+    
+    # Validate state argument
+    if state not in ['on', 'off']:
+        console.print("[red]❌ Animation state must be 'on' or 'off'[/red]")
+        console.print("Examples:")
+        console.print("  [cyan]ccux animate on[/cyan]   - Enable animations")
+        console.print("  [cyan]ccux animate off[/cyan]  - Disable animations")
+        raise typer.Exit(1)
+    
+    # Find target file
+    if file:
+        if not os.path.exists(file):
+            console.print(f"[red]❌ File not found: {file}[/red]")
+            raise typer.Exit(1)
+        target_file = file
+    else:
+        found_files = find_landing_page_files(output_dir)
+        if not found_files:
+            console.print(f"[red]❌ No landing page files found in {output_dir}[/red]")
+            console.print("Run [bold]ccux gen[/bold] first to create a landing page")
+            raise typer.Exit(1)
+        
+        # Prefer HTML for animation control (React not supported yet)
+        if 'html' in found_files:
+            target_file = found_files['html']
+        else:
+            console.print("[red]❌ Only HTML files are supported for animation control[/red]")
+            console.print("React animation control coming soon!")
+            raise typer.Exit(1)
+    
+    console.print(f"[bold blue]🎬 {'Enabling' if state == 'on' else 'Disabling'} animations in: {target_file}[/bold blue]")
+    
+    try:
+        # Read the current file
+        with open(target_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract context for theme-based animations
+        context = extract_page_context(target_file)
+        theme = context['theme']
+        
+        if state == 'off':
+            # Disable animations by adding no-animations class to body and CSS rules
+            if 'class="' in content and 'data-animate="true"' in content:
+                # Add no-animations class to body
+                content = re.sub(
+                    r'<body([^>]*?)class="([^"]*?)"', 
+                    r'<body\1class="\2 no-animations"', 
+                    content
+                )
+                
+                # Add CSS to disable animations if not present
+                animation_disable_css = """
+.no-animations * {
+  animation: none !important;
+  transition: none !important;
+}
+.no-animations html {
+  scroll-behavior: auto !important;
+}"""
+                
+                # Insert CSS before closing </style> tag
+                if '</style>' in content and animation_disable_css not in content:
+                    content = content.replace('</style>', f'{animation_disable_css}\n</style>')
+                
+                console.print("[green]✅ Animations disabled[/green]")
+            else:
+                console.print("[yellow]⚠️  No animations found to disable[/yellow]")
+        
+        else:  # state == 'on'
+            # Enable animations by removing no-animations class and ensuring animation system is present
+            if 'no-animations' in content:
+                # Remove no-animations class from body
+                content = re.sub(
+                    r'<body([^>]*?)class="([^"]*?)no-animations\s*([^"]*?)"', 
+                    r'<body\1class="\2\3"', 
+                    content
+                )
+                content = re.sub(r'\s+class=""', '', content)  # Clean up empty class attributes
+                
+                console.print(f"[green]✅ Animations enabled with {theme} theme styling[/green]")
+            else:
+                console.print("[yellow]⚠️  Animations are already enabled[/yellow]")
+        
+        # Write the updated content
+        with open(target_file, 'w', encoding='utf-8') as f:
+            f.write(content)
+            
+        console.print(f"📁 Updated: [bold]{target_file}[/bold]")
+        
+        # Show preview instructions
+        console.print(f"\n[bold cyan]🌐 Preview your {'animated' if state == 'on' else 'static'} page:[/bold cyan]")
+        console.print(f"  [bold]cd {os.path.dirname(target_file)}[/bold]")
+        console.print("  [bold]python -m http.server 3000[/bold]")
+        console.print("  Then open [bold]http://localhost:3000[/bold] in your browser")
+        
+    except Exception as e:
+        console.print(f"[red]❌ Error controlling animations: {e}[/red]")
+        raise typer.Exit(1)
+
+@app.command()
 def help(
     topic: Optional[str] = typer.Argument(None, help="Specific help topic (quickstart|themes|examples|workflows)")
 ):
@@ -1339,6 +1458,7 @@ def help(
         table.add_row("gen", "Generate landing page", "ccux gen --desc 'AI tool' --theme brutalist")
         table.add_row("regen", "Regenerate specific sections", "ccux regen --section hero,pricing")
         table.add_row("theme", "Change design theme", "ccux theme minimal")
+        table.add_row("animate", "Control page animations", "ccux animate off")
         table.add_row("help", "Show detailed help", "ccux help themes")
         table.add_row("version", "Show version info", "ccux version")
         
@@ -1484,7 +1604,16 @@ def help(
         console.print("• [bold]Change theme[/bold]: [cyan]ccux theme brutalist[/cyan]")
         console.print("  Apply brutalist theme to existing page")
         console.print("• [bold]Custom file[/bold]: [cyan]ccux theme minimal --file custom/page.html[/cyan]")
-        console.print("  Change theme of specific file\n")
+        console.print("  Change theme of specific file")
+        
+        # Animation control
+        console.print("\n[bold green]Animation Control[/bold green]")
+        console.print("• [bold]Disable animations[/bold]: [cyan]ccux animate off[/cyan]")
+        console.print("  Turn off all animations for better performance")
+        console.print("• [bold]Enable animations[/bold]: [cyan]ccux animate on[/cyan]")
+        console.print("  Turn on theme-based animations")
+        console.print("• [bold]Custom file[/bold]: [cyan]ccux animate off --file custom.html[/cyan]")
+        console.print("  Control animations in specific file\n")
         
     elif topic == "workflows":
         console.print("[bold blue]Step-by-Step Workflows[/bold blue]\n")

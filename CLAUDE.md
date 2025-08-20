@@ -189,6 +189,47 @@ ccux theme illustrated --file education-platform.html
 
 ---
 
+### `ccux animate`
+Control animations in existing landing pages.
+
+**Usage:**
+```bash
+ccux animate STATE [OPTIONS]
+```
+
+**Arguments:**
+- `STATE`: Animation state (on|off)
+
+**Options:**
+- `--file, -f FILE`: Path to landing page file
+- `--output, -o DIR`: Output directory
+
+**Examples:**
+```bash
+# Disable all animations (better performance/accessibility)
+ccux animate off
+
+# Enable theme-based animations
+ccux animate on
+
+# Control animations in specific file
+ccux animate off --file custom/page.html
+
+# Control animations in custom output directory
+ccux animate on --output output/custom-page
+```
+
+**Description:** Controls animations in generated landing pages through CLI commands instead of web interface toggles. When animations are turned off, all animations and transitions are disabled via CSS classes for better performance and accessibility. When turned on, animations are restored based on the detected theme's animation specifications.
+
+**Key Features:**
+- **CLI-first control**: No web interface toggles needed
+- **Performance optimization**: Complete animation disable for faster loading
+- **Accessibility support**: Easy way to disable animations for motion-sensitive users
+- **Theme-aware**: Restores appropriate animations based on detected design theme
+- **File targeting**: Control animations in specific files or directories
+
+---
+
 ### `ccux help`
 Show comprehensive help and usage examples with different topics.
 

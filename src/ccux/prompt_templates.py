@@ -11,6 +11,78 @@ except ImportError:
     def get_theme_design_system_rules(theme_name: str) -> str:
         return f"Generate design system for {theme_name} theme."
 
+def get_functional_requirements() -> str:
+    """Get standard functional requirements for all HTML generation prompts"""
+    return """
+CRITICAL FUNCTIONAL REQUIREMENTS:
+
+1. Navigation System (MANDATORY):
+   - Include sticky navbar with smooth scroll-to-section links (#hero, #features, #pricing, etc.)
+   - Add mobile hamburger menu with JavaScript toggle functionality
+   - Every major section MUST have an id attribute for navigation
+   - Use onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" for mobile toggle
+   - Include smooth scrolling: html {{ scroll-behavior: smooth; }}
+
+2. Responsive Design (REQUIRED):
+   - Apply Tailwind breakpoints throughout: sm: (640px+), md: (768px+), lg: (1024px+)
+   - Use responsive classes: text-sm md:text-lg, px-4 md:px-8, grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+   - Ensure mobile navigation works properly with hamburger menu
+   - Test all sections at different breakpoints
+
+3. Working CTAs (REQUIRED):
+   - Primary CTA must be functional: use mailto: link or working form with action="#"
+   - Include basic contact form with email input and submit button
+   - Secondary CTAs use real links (href="#contact" or "mailto:contact@example.com")
+   - All buttons must have hover states and keyboard accessibility
+"""
+
+def get_animation_requirements() -> str:
+    """Get smart animation system requirements for CLI-controlled animations"""
+    return """
+SMART ANIMATION SYSTEM (REQUIRED):
+
+1. Section Detection & Conditional Animation:
+   - Auto-detect existing sections: hero, features, pricing, testimonials, stats, cards
+   - Apply animations ONLY to detected sections that exist on the page
+   - Skip animations for empty or static sections
+   - Use data attributes for section identification: data-animate="true"
+
+2. Animation Types & Timings:
+   - Entrance animations: fadeInUp (500ms ease-out) for main sections
+   - Mobile menu toggle: slideDown (200ms ease-out) 
+   - Feature cards: Progressive reveal with 150ms stagger delay
+   - Stats/numbers: Count-up animation on scroll if numeric content detected
+   - Testimonials: Auto-fade transition if multiple testimonials exist
+   - Micro-interactions: Button hover/focus (100-150ms)
+
+3. Accessibility & Performance:
+   - MANDATORY: Respect @media (prefers-reduced-motion: reduce) - disable all animations
+   - Use CSS transforms (translateX, translateY, scale) for GPU acceleration
+   - Implement IntersectionObserver for scroll-triggered animations
+   - Set will-change property only during animations
+
+4. CLI Animation Control:
+   - NO toggle button in navbar - controlled via CLI command
+   - NO localStorage functionality - controlled via CSS classes
+   - Animations enabled by default on generation
+   - Support .no-animations class to disable all animations
+   - Per-section control via data-animate attributes
+
+5. Animation CSS & JavaScript:
+   - Include @keyframes: fadeInUp, slideDown, countUp, fadeInStagger
+   - Animation controller JavaScript with init(), detectSections()
+   - Use CSS custom properties for stagger delays: --stagger-delay
+   - Implement intersection observer with 0.1 threshold
+   - Include .no-animations CSS rules to disable all animations
+
+6. Smart Defaults:
+   - Hero: Immediate fadeIn on page load
+   - Features: Scroll-triggered staggered entrance
+   - Stats: Count-up animation on scroll
+   - Mobile menu: Slide animation with backdrop
+   - Testimonials: Auto-rotate if multiple (5s intervals)
+   - All animations: Enabled by default, controlled by CLI commands"""
+
 def reference_discovery_prompt(desc: str) -> str:
     return f"Given this product: '{desc}', find 3 live product URLs of similar tools. Only list working websites, not blogs. Format: Name – URL – short note."
 
@@ -408,6 +480,29 @@ Implementation Rules:
 - Use SVG icons or icon libraries (Heroicons, Lucide, Feather) instead of emoji characters for professional appearance
 - IMPORTANT: When referencing images (reference.jpg, reference_1_*.jpg, etc.), use relative path ../filename.jpg since HTML is in output/landing-page/ but images are in output/
 
+CRITICAL FUNCTIONAL REQUIREMENTS:
+
+1. Navigation System (MANDATORY):
+   - Include sticky navbar with smooth scroll-to-section links (#hero, #features, #pricing, etc.)
+   - Add mobile hamburger menu with JavaScript toggle functionality
+   - Every major section MUST have an id attribute for navigation
+   - Use onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" for mobile toggle
+   - Include smooth scrolling: html {{ scroll-behavior: smooth; }}
+
+2. Responsive Design (REQUIRED):
+   - Apply Tailwind breakpoints throughout: sm: (640px+), md: (768px+), lg: (1024px+)
+   - Use responsive classes: text-sm md:text-lg, px-4 md:px-8, grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+   - Ensure mobile navigation works properly with hamburger menu
+   - Test all sections at different breakpoints
+
+3. Working CTAs (REQUIRED):
+   - Primary CTA must be functional: use mailto: link or working form with action="#"
+   - Include basic contact form with email input and submit button
+   - Secondary CTAs use real links (href="#contact" or "mailto:contact@example.com")
+   - All buttons must have hover states and keyboard accessibility
+
+{get_animation_requirements()}
+
 Visual Treatment Guide:
 <!-- IMAGE-STRATEGY: [hero-image/product-shot/illustration/none] -->
 <!-- ANIMATION-LEVEL: [none/micro/scroll-triggered] -->
@@ -456,6 +551,35 @@ Technical Requirements:
 - Accessible interactions
 - Use SVG icons or icon libraries (Heroicons, Lucide, Feather) instead of emoji characters for professional appearance
 - IMPORTANT: When referencing images (reference.jpg, reference_1_*.jpg, etc.), use relative path ../filename.jpg since HTML is in output/landing-page/ but images are in output/
+
+CRITICAL FUNCTIONAL REQUIREMENTS:
+
+1. Navigation System (MANDATORY):
+   - Create sticky navbar with logo and navigation links
+   - Each nav link must use href="#section-id" for smooth scrolling to sections
+   - Add mobile hamburger menu with toggle functionality
+   - Every major section MUST have an id attribute (id="hero", id="features", id="pricing", etc.)
+   - Include JavaScript: onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+   - Add smooth scrolling CSS: html {{ scroll-behavior: smooth; }}
+
+2. Responsive Design (REQUIRED):
+   - Mobile-first approach: Base styles for mobile devices
+   - Use Tailwind breakpoints consistently:
+     * sm: (640px+) - Tablet adjustments
+     * md: (768px+) - Small desktop
+     * lg: (1024px+) - Large desktop
+   - Apply responsive classes throughout: text-sm md:text-lg, px-4 md:px-8, grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+   - Ensure mobile navigation hamburger menu functions properly
+   - Make all images and text scale appropriately
+
+3. Working CTAs (REQUIRED):
+   - Primary CTA must be functional: Use mailto: link or implement working form
+   - Contact form example: action="#" method="POST" with email input and submit button
+   - Secondary CTAs use real links: href="#contact" or "mailto:contact@example.com"
+   - All buttons must have hover states and be keyboard accessible (tabindex, focus states)
+   - Include proper form validation and user feedback
+
+{get_animation_requirements()}
 
 CRITICAL: Output ONLY the complete HTML code starting with <!DOCTYPE html>.
 Do NOT include any explanations, descriptions, or markdown formatting.
@@ -574,6 +698,25 @@ CRITICAL REGENERATION RULES:
 4. Content can be updated, but design MUST match existing sections perfectly
 5. When referencing images: use relative path ../filename.jpg
 6. NO deviation from established visual patterns
+
+PRESERVE FUNCTIONALITY (MANDATORY):
+- Maintain all navigation links and smooth scrolling functionality
+- Keep mobile hamburger menu toggle intact: onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+- Preserve all section IDs for navigation (id="hero", id="features", etc.)
+- Maintain responsive breakpoints: sm:, md:, lg: classes throughout
+- Keep form actions and CTA functionality working
+- Preserve all hover states and keyboard accessibility
+- Maintain smooth scrolling CSS: html {{ scroll-behavior: smooth; }}
+
+PRESERVE ANIMATION SYSTEM (MANDATORY):
+- Keep all existing animation CSS keyframes (@keyframes fadeInUp, slideDown, etc.)
+- Maintain animation toggle button and localStorage functionality
+- Preserve data-animate attributes on sections
+- Keep IntersectionObserver setup for scroll-triggered animations
+- Maintain animation controller JavaScript (init, toggle, detectSections functions)
+- Preserve @media (prefers-reduced-motion) accessibility rules
+- Keep animation timing and stagger delays intact
+- Maintain per-section animation controls
 
 CRITICAL: Output ONLY the HTML sections with START/END markers.
 Do NOT include any explanations, descriptions, or markdown formatting.

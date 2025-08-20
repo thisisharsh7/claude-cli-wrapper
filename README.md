@@ -1,327 +1,143 @@
 # CCUX — Claude Code UI Generator
 
-> **Built for developers who live in the terminal**
+> Generate professional landing pages from your terminal
 
-As a developer, I spend most of my time in the terminal. I love the efficiency, the speed, and the control it gives me over my workflow. But when it came to creating landing pages, I found myself switching between multiple tools, spending hours on design decisions, and often ending up with mediocre results.
+**Open source and completely free**
 
-That's why I built CCUX — a CLI tool that harnesses the power of Claude AI to generate professional, conversion-optimized landing pages in minutes, not hours. It implements the same 12-phase design methodology that UX agencies charge thousands for, but right from your terminal.
+## What is this?
 
-**Why CCUX?**
-- ⚡ **Save time**: Generate professional landing pages in minutes
-- 🧠 **AI-powered design thinking**: Uses Claude's intelligence for UX research and competitive analysis  
-- 🎯 **Conversion-optimized**: Not just pretty pages, but pages that actually convert
-- 🖥️ **Terminal-native**: Built by developers, for developers
-- 🆓 **Free to use**: Only requires Claude CLI (which you probably already have)
+CCUX is an open-source CLI tool that uses Claude AI to generate conversion-optimized landing pages in minutes. It analyzes competitors, creates user research, and outputs production-ready HTML/React code with TailwindCSS.
 
-## ✨ What it does
+## Why I built this
 
-1. **Automated Competitive Research**: Discovers 3 competitor websites and design showcases
-2. **Screenshot Analysis**: Captures and analyzes competitor landing pages for design patterns
-3. **Professional Design Process**: 12-phase UX methodology including user research, wireframing, and visual design
-4. **Strategic Copy Generation**: Creates conversion-optimized copy based on competitive analysis
-5. **Code Generation**: Outputs production-ready HTML or React components with TailwindCSS styling
-6. **Section Management**: Regenerate specific sections or change themes without rebuilding
+As a developer, I was tired of:
+- Switching between multiple design tools
+- Spending hours on landing page decisions  
+- Getting mediocre results from drag-and-drop builders
 
-## 🧰 Prerequisites
+I wanted professional landing pages generated with proven UX methodology, straight from my terminal.
 
-- **Claude CLI**: The only requirement! Install from [claude.ai/code](https://www.anthropic.com/claude-code)
-- Python 3.9 or higher
-- macOS/Linux/Windows (WSL recommended for Windows)
+## Who is it for?
 
-**👆 That's it!** If you're already using Claude Code CLI, you're ready to go.
+- **Indie hackers** testing product ideas quickly
+- **Startups** shipping MVPs without design bottlenecks
+- **Developers** who want to stay in terminal workflow
+- **Freelancers/Agencies** needing faster client deliverables
+- **Anyone** who prefers code they own over SaaS builders
 
-## 🚀 Quick Start
+## How it helps
 
-**Got 2 minutes? Here's how to generate your first professional landing page:**
+- **Save time**: Generate pages in 3 minutes vs 3 days
+- **Better conversions**: Uses 12-phase UX methodology agencies charge $1000s for
+- **Stay focused**: No context switching from terminal to design tools
+- **Own your code**: React/HTML output you can modify and deploy anywhere
+- **Smart research**: Automatically analyzes 3 competitors for design inspiration
 
-```bash
-# Install CCUX
-pip install ccux
+## What problem it solves
 
-# Initialize (downloads browser for screenshots)
-ccux init
+**The Problem**: Creating professional landing pages requires design skills, UX knowledge, competitor research, and hours of work.
 
-# Generate with just a description
-ccux gen --desc "AI-powered project management tool"
+**The Solution**: CCUX automates the entire process:
+1. Finds and analyzes 3 competitor sites automatically
+2. Runs professional UX research (personas, user journeys, wireframes)
+3. Generates strategic copy and design system
+4. Outputs production-ready code you can deploy immediately
 
-# Or add reference websites for inspiration
-ccux gen --desc "Project management SaaS" --url https://linear.app --url https://notion.so
-```
+## Prerequisites
 
-**That's it!** Your conversion-optimized landing page will be generated in the `output/landing-page` directory with full UX research, competitive analysis, and professional design.
+- **Claude CLI** - Install from [claude.ai/code](https://www.anthropic.com/api)
+- **Python 3.9+** - Most systems have this
+- **Internet connection** - For competitor analysis
 
-### 🎯 Perfect for Claude Code CLI Users
+That's it! If you already use Claude Code CLI, you're ready.
 
-If you're already using Claude for coding, CCUX integrates seamlessly:
-- **Same AI, specialized for design**: Leverages Claude's intelligence for UX research
-- **Reference websites**: Add up to 3 URLs and CCUX will analyze them for design inspiration
-- **Terminal-first workflow**: No context switching, no GUI tools, just pure CLI efficiency
-- **Production-ready output**: Generated code follows modern standards (TailwindCSS, semantic HTML, accessibility)
-
-## 🚀 Installation Options
-
-### Install from PyPI (Recommended)
+## Quick Start
 
 ```bash
-# Install directly from PyPI
+# Install
 pip install ccux
 
-# Initialize Playwright browsers (required for screenshot capture)
+# Initialize (one-time setup)
 ccux init
 
 # Generate your first landing page
 ccux gen --desc "AI-powered project management tool"
 ```
 
-**📦 PyPI Package**: [https://pypi.org/project/ccux/](https://pypi.org/project/ccux/)
+Your professional landing page is ready in `output/landing-page/`.
 
-**🐙 GitHub Repository**: [https://github.com/thisisharsh7/claude-cli-wrapper](https://github.com/thisisharsh7/claude-cli-wrapper)
-
-### Development Installation
+## Development Installation
 
 ```bash
-# 1. Clone the repository
+# Clone and setup
 git clone https://github.com/thisisharsh7/claude-cli-wrapper.git
 cd claude-cli-wrapper
 
-# 2. Create and activate virtual environment
+# Install dependencies
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# 3. Install package in development mode
 pip install -e .
 
-# 4. Initialize Playwright browsers (required for screenshot capture)
+# Initialize and test
 ccux init
-
-# 5. Generate your first landing page
-ccux gen --desc "AI-powered project management tool"
+ccux gen --desc "Your product description"
 ```
 
-## 📋 Commands
+## Key Commands
 
-### `ccux init`
-Initialize CCUX by installing Playwright browsers.
-
-**Usage:** `ccux init`
-
-**Example:**
 ```bash
-ccux init
-```
+# Generate page
+ccux gen --desc "Product description" --theme brutalist
 
----
+# Regenerate sections
+ccux regen --section hero,pricing
 
-### `ccux gen`
-Generate a conversion-optimized landing page using AI-powered design thinking.
+# Change theme
+ccux theme minimal
 
-**Usage:** `ccux gen [OPTIONS]`
+# Control animations
+ccux animate off  # Better performance
+ccux animate on   # Enable animations
 
-**Options:**
-- `--desc, -d TEXT`: Product description
-- `--desc-file FILE`: Load description from text file
-- `--url, -u URL`: Reference URLs (can use multiple times, max 3)
-- `--framework, -f [html|react]`: Output framework (default: html)
-- `--theme, -t [minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated]`: Design theme (default: minimal)
-- `--no-design-thinking`: Skip design thinking for faster generation
-- `--output, -o DIR`: Output directory
-
-**Examples:**
-```bash
-# Interactive mode (recommended)
-ccux gen
-
-# Quick generation without design thinking
-ccux gen --desc "AI project management tool" --no-design-thinking
-
-# Full analysis with custom references and theme
-ccux gen --url https://linear.app --desc "Project management tool" --theme brutalist
-
-# Load from file with React output
-ccux gen --desc-file product_desc.txt --framework react --theme corporate
-```
-
----
-
-### `ccux regen`
-Regenerate specific sections of an existing landing page.
-
-**Usage:** `ccux regen [OPTIONS]`
-
-**Options:**
-- `--section, -s TEXT`: Sections to regenerate (comma-separated)
-- `--all`: Regenerate all sections
-- `--desc, -d TEXT`: Product description
-- `--file, -f FILE`: Path to landing page file
-- `--output, -o DIR`: Output directory
-
-**Examples:**
-```bash
-# Regenerate hero section
-ccux regen --section hero
-
-# Regenerate multiple sections
-ccux regen --section hero,features,pricing
-
-# Regenerate all sections
-ccux regen --all
-```
-
----
-
-### `ccux theme`
-Change the design theme of an existing landing page.
-
-**Usage:** `ccux theme THEME [OPTIONS]`
-
-**Options:**
-- `--file, -f FILE`: Path to landing page file
-- `--output, -o DIR`: Output directory
-
-**Examples:**
-```bash
-# Change to brutalist theme
-ccux theme brutalist
-
-# Change theme for specific file
-ccux theme playful --file custom/page.html
-```
-
----
-
-### `ccux help`
-Show comprehensive help and usage examples with different topics.
-
-**Usage:** `ccux help [TOPIC]`
-
-**Topics:**
-- `quickstart`: Complete getting started guide
-- `themes`: All available design themes with descriptions
-- `examples`: Common usage patterns and commands
-- `workflows`: Step-by-step workflows for different scenarios
-
-**Examples:**
-```bash
-# Show main help menu with command overview
+# Get help
 ccux help
-
-# Get detailed quickstart guide
-ccux help quickstart
-
-# Browse all available themes
-ccux help themes
-
-# View common usage examples
-ccux help examples
-
-# Learn step-by-step workflows
-ccux help workflows
 ```
+
+## Important Links
+
+- **PyPI Package**: [https://pypi.org/project/ccux/](https://pypi.org/project/ccux/)
+- **GitHub Repository**: [https://github.com/thisisharsh7/claude-cli-wrapper](https://github.com/thisisharsh7/claude-cli-wrapper)
+- **Claude Code CLI**: [https://claude.ai/code](https://claude.ai/code)
+- **Theme Guide**: [THEME_IMPLEMENTATION_GUIDE.md](THEME_IMPLEMENTATION_GUIDE.md)
+
+## Available Themes
+
+**Core**: minimal, brutalist, playful, corporate  
+**Modern**: morphism, animated, terminal, aesthetic  
+**Additional**: dark, vibrant, sustainable, data, illustrated
+
+Run `ccux help themes` to see detailed descriptions.
+
+## Preview Pages
+
+```bash
+# Start local server
+python -m http.server -d output/landing-page 3000
+# Open http://localhost:3000
+```
+
+## Get Help
+
+- Run `ccux help` for comprehensive guidance
+- Use `ccux help quickstart` for step-by-step setup
+- Check GitHub issues for community support
+
+## Contributing & Support
+
+**⭐ Star this project** if you find it useful! It helps others discover CCUX.
+
+**🐛 Found a bug or want a feature?** Open an issue in the [GitHub Issues](https://github.com/thisisharsh7/claude-cli-wrapper/issues) tab.
 
 ---
 
-### `ccux version`
-Show version information.
-
-**Usage:** `ccux version`
-
-**Example:**
-```bash
-ccux version
-```
-
-## 🎨 Themes
-
-### Core Themes
-- `minimal`: Clean, content-focused design following Dieter Rams' principles
-- `brutalist`: Raw, honest design inspired by Brutalist architecture
-- `playful`: Joyful, approachable design with organic shapes and vibrant colors
-- `corporate`: Traditional, trustworthy design following business conventions
-
-### Modern Design Theory Themes
-- `morphism`: Soft, tactile design combining neumorphism and glassmorphism
-- `animated`: Motion-first design where animation drives user experience
-- `terminal`: CLI-inspired aesthetic for developers and tech enthusiasts
-- `aesthetic`: Retro-futuristic Y2K, vaporwave, and cyber aesthetics
-
-### Additional Theme Options
-- `dark`: Modern dark theme optimized for contrast and reduced eye strain
-- `vibrant`: Colorful, dopamine-rich design that energizes user interactions
-- `sustainable`: Nature-inspired design emphasizing eco-conscious branding
-- `data`: Information-dense design optimized for dashboards and analytics
-- `illustrated`: Hand-drawn, custom illustration-driven design for humanized experiences
-
-📖 **See [THEME_IMPLEMENTATION_GUIDE.md](THEME_IMPLEMENTATION_GUIDE.md) for detailed specifications and usage guidelines**
-
-## 🛠️ Frameworks
-
-- `html`: Single HTML file with inline TailwindCSS (default)
-- `react`: React component with ESM imports
-
-## ⚙️ Configuration
-
-Create optional `ccux.yaml` in your working directory:
-
-```yaml
-framework: html    # html or react
-theme: minimal     # minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated
-sections: [hero, features, pricing, footer]
-claude_cmd: claude
-output_dir: output/landing-page
-```
-
-CLI flags always override config values.
-
-## 🔬 Design Thinking Process
-
-When not using `--no-design-thinking`, CCUX implements a 12-phase professional UX methodology:
-
-1. **Reference Discovery** - Auto-finds competitors using Claude AI
-2. **Screenshot Capture** - Captures competitor landing pages
-3. **Product Understanding** - Analyzes value proposition
-4. **UX Analysis** - Identifies design patterns and opportunities
-5. **User Research** - Creates empathy maps and personas
-6. **Site Flow** - Maps user journeys and information architecture
-7. **Content Strategy** - Develops strategic messaging
-8. **Wireframing** - Validates mobile-first layouts
-9. **Design System** - Creates typography, colors, and components
-10. **High-Fidelity Design** - Adds interactive elements and polish
-11. **Copy Generation** - Refines conversion-optimized copy
-12. **Implementation** - Generates production-ready code
-
-## 🌐 Preview Generated Pages
-
-```bash
-# Start local server to preview
-python -m http.server -d output/landing-page 3000
-
-# Or with Node.js
-npx serve output/landing-page -p 3000
-
-# Then open http://localhost:3000 in your browser
-```
-
-## 💡 Usage Tips
-
-- **Get Help**: Run `ccux help` for comprehensive guidance and examples
-- **Long Descriptions**: Files >100 words are automatically summarized to optimize processing
-- **Reference Limit**: Maximum 3 reference URLs for optimal performance
-- **Interactive Mode**: Run `ccux gen` without options for guided setup
-- **Section Updates**: Use `ccux regen` to update specific parts without rebuilding
-- **Theme Changes**: Use `ccux theme` to redesign with preserved content
-
-## 🆘 Troubleshooting
-
-- **Claude CLI Issues**: Ensure `claude` command is accessible on PATH
-- **Playwright Errors**: Run `ccux init` to install required browsers
-- **Screenshot Failures**: Tool continues without screenshots if capture fails
-- **Generation Errors**: Try `--no-design-thinking` for simpler processing
-- **Memory Issues**: Tool automatically cleans up between operations
-
-## 🏗️ Architecture
-
-- **CLI Interface**: Typer-based with rich terminal formatting
-- **Web Scraping**: Playwright automation with error handling
-- **AI Integration**: Claude CLI with timeout protection and usage tracking
-- **Output Management**: Structured HTML/React with section markers
-- **Configuration**: YAML-based with CLI override support
+Made with ❤️ for developers who live in the terminal.
