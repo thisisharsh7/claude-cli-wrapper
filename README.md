@@ -125,6 +125,37 @@ ccux theme playful --file custom/page.html
 
 ---
 
+### `ccux help`
+Show comprehensive help and usage examples with different topics.
+
+**Usage:** `ccux help [TOPIC]`
+
+**Topics:**
+- `quickstart`: Complete getting started guide
+- `themes`: All available design themes with descriptions
+- `examples`: Common usage patterns and commands
+- `workflows`: Step-by-step workflows for different scenarios
+
+**Examples:**
+```bash
+# Show main help menu with command overview
+ccux help
+
+# Get detailed quickstart guide
+ccux help quickstart
+
+# Browse all available themes
+ccux help themes
+
+# View common usage examples
+ccux help examples
+
+# Learn step-by-step workflows
+ccux help workflows
+```
+
+---
+
 ### `ccux version`
 Show version information.
 
@@ -208,6 +239,7 @@ npx serve output/landing-page -p 3000
 
 ## 💡 Usage Tips
 
+- **Get Help**: Run `ccux help` for comprehensive guidance and examples
 - **Long Descriptions**: Files >100 words are automatically summarized to optimize processing
 - **Reference Limit**: Maximum 3 reference URLs for optimal performance
 - **Interactive Mode**: Run `ccux gen` without options for guided setup

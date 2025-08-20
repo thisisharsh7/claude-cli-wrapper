@@ -189,6 +189,47 @@ ccux theme illustrated --file education-platform.html
 
 ---
 
+### `ccux help`
+Show comprehensive help and usage examples with different topics.
+
+**Usage:**
+```bash
+ccux help [TOPIC]
+```
+
+**Topics:**
+- `quickstart`: Complete getting started guide with step-by-step instructions
+- `themes`: All available design themes with detailed descriptions and use cases  
+- `examples`: Common usage patterns, commands, and practical scenarios
+- `workflows`: Step-by-step workflows for different user types and goals
+
+**Examples:**
+```bash
+# Show main help menu with command overview and quick start
+ccux help
+
+# Get detailed quickstart guide for new users
+ccux help quickstart
+
+# Browse all 13 available themes with descriptions
+ccux help themes
+
+# View common usage examples and patterns
+ccux help examples
+
+# Learn step-by-step workflows for different scenarios
+ccux help workflows
+```
+
+**Description:** This comprehensive help system makes CCUX more user-friendly by providing:
+- Interactive command reference with examples
+- Progressive learning from basic to advanced usage
+- Self-service documentation built into the tool
+- Real-world workflows for different use cases
+- Complete theme guide with descriptions and usage patterns
+
+---
+
 ### `ccux version`
 Show version information.
 

@@ -1187,6 +1187,252 @@ def theme(
         raise typer.Exit(1)
 
 @app.command()
+def help(
+    topic: Optional[str] = typer.Argument(None, help="Specific help topic (quickstart|themes|examples|workflows)")
+):
+    """Show comprehensive help and usage examples
+    
+    Available help topics:
+    - quickstart: Getting started guide
+    - themes: Available design themes with descriptions
+    - examples: Common usage examples  
+    - workflows: Step-by-step workflows
+    """
+    
+    if topic is None:
+        # Show main help menu
+        console.print("[bold blue]CCUX - Claude Code UI Generator[/bold blue]")
+        console.print("Generate conversion-optimized landing pages using AI-powered design thinking\n")
+        
+        # Quick start section
+        console.print("[bold green]Quick Start[/bold green]")
+        console.print("1. Initialize: [cyan]ccux init[/cyan]")
+        console.print("2. Generate: [cyan]ccux gen --desc 'Your product description'[/cyan]")
+        console.print("3. Preview: [cyan]cd output/landing-page && python -m http.server 3000[/cyan]\n")
+        
+        # Main commands table
+        table = Table(show_header=True, header_style="bold cyan")
+        table.add_column("Command", style="green", width=15)
+        table.add_column("Description", width=50)
+        table.add_column("Example", style="dim")
+        
+        table.add_row("init", "Install Playwright browsers", "ccux init")
+        table.add_row("gen", "Generate landing page", "ccux gen --desc 'AI tool' --theme brutalist")
+        table.add_row("regen", "Regenerate specific sections", "ccux regen --section hero,pricing")
+        table.add_row("theme", "Change design theme", "ccux theme minimal")
+        table.add_row("help", "Show detailed help", "ccux help themes")
+        table.add_row("version", "Show version info", "ccux version")
+        
+        console.print(table)
+        
+        # Available help topics
+        console.print("\n[bold yellow]Detailed Help Topics[/bold yellow]")
+        console.print("• [cyan]ccux help quickstart[/cyan] - Complete getting started guide")
+        console.print("• [cyan]ccux help themes[/cyan] - All available design themes")
+        console.print("• [cyan]ccux help examples[/cyan] - Common usage patterns")
+        console.print("• [cyan]ccux help workflows[/cyan] - Step-by-step workflows")
+        
+        # Tips
+        console.print("\n[bold magenta]Pro Tips[/bold magenta]")
+        console.print("• Run [cyan]ccux gen[/cyan] (no args) for interactive mode")
+        console.print("• Use [cyan]--no-design-thinking[/cyan] for faster generation")
+        console.print("• Provide [cyan]--url[/cyan] references for better competitor analysis")
+        console.print("• Save long descriptions in a file and use [cyan]--desc-file[/cyan]")
+        
+    elif topic == "quickstart":
+        console.print("[bold blue]CCUX Quick Start Guide[/bold blue]\n")
+        
+        console.print("[bold green]Step 1: Installation & Setup[/bold green]")
+        console.print("# Install CCUX")
+        console.print("[cyan]pip install ccux[/cyan]")
+        console.print("# Initialize (download browsers)")  
+        console.print("[cyan]ccux init[/cyan]\n")
+        
+        console.print("[bold green]Step 2: Your First Landing Page[/bold green]")
+        console.print("# Interactive mode (recommended for beginners)")
+        console.print("[cyan]ccux gen[/cyan]")
+        console.print("# Or direct mode")
+        console.print("[cyan]ccux gen --desc 'AI-powered project management tool'[/cyan]\n")
+        
+        console.print("[bold green]Step 3: Preview Your Page[/bold green]")
+        console.print("[cyan]cd output/landing-page[/cyan]")
+        console.print("[cyan]python -m http.server 3000[/cyan]")
+        console.print("Open http://localhost:3000 in your browser\n")
+        
+        console.print("[bold green]Step 4: Customize & Iterate[/bold green]")
+        console.print("# Change theme")
+        console.print("[cyan]ccux theme brutalist[/cyan]")
+        console.print("# Regenerate specific sections")
+        console.print("[cyan]ccux regen --section hero[/cyan]")
+        console.print("# Add competitor references")
+        console.print("[cyan]ccux gen --desc 'Your product' --url https://competitor.com[/cyan]\n")
+        
+        console.print("[bold yellow]What You Get[/bold yellow]")
+        console.print("• Professional conversion-optimized landing page")
+        console.print("• Mobile-responsive design with TailwindCSS")
+        console.print("• SEO-optimized HTML structure")
+        console.print("• Design analysis JSON with research insights")
+        console.print("• Screenshot references from competitors")
+        
+    elif topic == "themes":
+        console.print("[bold blue]Available Design Themes[/bold blue]\n")
+        
+        # Core themes
+        console.print("[bold green]Core Themes[/bold green]")
+        core_themes = [
+            ("minimal", "Clean, content-focused design following Dieter Rams principles"),
+            ("brutalist", "Raw, honest design inspired by Brutalist architecture"),
+            ("playful", "Joyful, approachable design with organic shapes"),
+            ("corporate", "Traditional, trustworthy business design")
+        ]
+        
+        for theme, desc in core_themes:
+            console.print(f"• [cyan]{theme:12}[/cyan] {desc}")
+        
+        # Modern themes
+        console.print(f"\n[bold green]Modern Design Theory Themes[/bold green]")
+        modern_themes = [
+            ("morphism", "Soft, tactile design combining neumorphism and glassmorphism"),
+            ("animated", "Motion-first design where animation drives experience"),
+            ("terminal", "Monospace, CLI-inspired aesthetic for developers"),
+            ("aesthetic", "Retro-futuristic design from Y2K and vaporwave")
+        ]
+        
+        for theme, desc in modern_themes:
+            console.print(f"• [cyan]{theme:12}[/cyan] {desc}")
+            
+        # Additional themes
+        console.print(f"\n[bold green]Specialized Themes[/bold green]")
+        specialized_themes = [
+            ("dark", "Modern dark theme optimized for contrast"),
+            ("vibrant", "Colorful, dopamine-rich design that energizes"),
+            ("sustainable", "Nature-inspired design for eco-conscious branding"),
+            ("data", "Information-dense design for dashboards/analytics"),
+            ("illustrated", "Hand-drawn, custom illustration-driven design")
+        ]
+        
+        for theme, desc in specialized_themes:
+            console.print(f"• [cyan]{theme:12}[/cyan] {desc}")
+        
+        console.print(f"\n[bold yellow]Usage Examples[/bold yellow]")
+        console.print("[cyan]ccux gen --desc 'SaaS platform' --theme minimal[/cyan]")
+        console.print("[cyan]ccux gen --desc 'Creative agency' --theme brutalist[/cyan]")
+        console.print("[cyan]ccux theme morphism  # Change existing page theme[/cyan]")
+        
+    elif topic == "examples":
+        console.print("[bold blue]Common Usage Examples[/bold blue]\n")
+        
+        # Basic examples
+        console.print("[bold green]Basic Generation[/bold green]")
+        examples_basic = [
+            ("Interactive mode", "ccux gen", "Guided setup with prompts"),
+            ("Simple generation", "ccux gen --desc 'AI writing tool'", "Quick page with minimal theme"),
+            ("From file", "ccux gen --desc-file product.txt", "Load long descriptions from file"),
+            ("Fast mode", "ccux gen --desc 'SaaS tool' --no-design-thinking", "Skip full research process")
+        ]
+        
+        for name, cmd, desc in examples_basic:
+            console.print(f"• [bold]{name}[/bold]: [cyan]{cmd}[/cyan]")
+            console.print(f"  {desc}\n")
+        
+        # Advanced examples  
+        console.print("[bold green]Advanced Usage[/bold green]")
+        examples_advanced = [
+            ("With competitors", "ccux gen --desc 'Project tool' --url https://linear.app --url https://notion.so", "Include competitor analysis"),
+            ("Custom theme", "ccux gen --desc 'Design portfolio' --theme aesthetic --framework react", "React output with aesthetic theme"),
+            ("Custom output", "ccux gen --desc 'Marketing site' --output custom-dir --theme vibrant", "Custom directory and theme")
+        ]
+        
+        for name, cmd, desc in examples_advanced:
+            console.print(f"• [bold]{name}[/bold]: [cyan]{cmd}[/cyan]")
+            console.print(f"  {desc}\n")
+        
+        # Regeneration examples
+        console.print("[bold green]Section Regeneration[/bold green]")
+        examples_regen = [
+            ("Single section", "ccux regen --section hero", "Regenerate just the hero section"),
+            ("Multiple sections", "ccux regen --section hero,pricing,footer", "Regenerate multiple sections"),
+            ("All sections", "ccux regen --all", "Regenerate entire page"),
+            ("With new description", "ccux regen --section features --desc 'Updated product description'", "Update with new context")
+        ]
+        
+        for name, cmd, desc in examples_regen:
+            console.print(f"• [bold]{name}[/bold]: [cyan]{cmd}[/cyan]")
+            console.print(f"  {desc}\n")
+        
+        # Theme changes
+        console.print("[bold green]Theme Management[/bold green]")
+        console.print("• [bold]Change theme[/bold]: [cyan]ccux theme brutalist[/cyan]")
+        console.print("  Apply brutalist theme to existing page")
+        console.print("• [bold]Custom file[/bold]: [cyan]ccux theme minimal --file custom/page.html[/cyan]")
+        console.print("  Change theme of specific file\n")
+        
+    elif topic == "workflows":
+        console.print("[bold blue]Step-by-Step Workflows[/bold blue]\n")
+        
+        # Workflow 1: First-time user
+        console.print("[bold green]Workflow 1: First Landing Page[/bold green]")
+        steps_first = [
+            "Install: pip install ccux",
+            "Initialize: ccux init", 
+            "Generate interactively: ccux gen",
+            "Preview: cd output/landing-page && python -m http.server 3000",
+            "Iterate: ccux regen --section hero (if needed)"
+        ]
+        
+        for i, step in enumerate(steps_first, 1):
+            console.print(f"{i}. {step}")
+        console.print()
+        
+        # Workflow 2: Competitive analysis
+        console.print("[bold green]Workflow 2: With Competitor Research[/bold green]")
+        steps_competitive = [
+            "Find 2-3 competitor websites",
+            "Generate with references: ccux gen --desc 'Your product' --url https://competitor1.com --url https://competitor2.com",
+            "Review design_analysis.json for insights",
+            "Refine sections: ccux regen --section pricing",
+            "Experiment with themes: ccux theme brutalist"
+        ]
+        
+        for i, step in enumerate(steps_competitive, 1):
+            console.print(f"{i}. {step}")
+        console.print()
+        
+        # Workflow 3: Production ready
+        console.print("[bold green]Workflow 3: Production-Ready Process[/bold green]")  
+        steps_production = [
+            "Prepare detailed product description (save to file)",
+            "Generate with full process: ccux gen --desc-file product.txt --theme corporate",
+            "Review and customize sections: ccux regen --section hero,features",
+            "Test different themes: ccux theme minimal, ccux theme dark",
+            "Final review and deployment prep"
+        ]
+        
+        for i, step in enumerate(steps_production, 1):
+            console.print(f"{i}. {step}")
+        console.print()
+        
+        # Workflow 4: Iterative design
+        console.print("[bold green]Workflow 4: Iterative Design Process[/bold green]")
+        steps_iterative = [
+            "Start with quick generation: ccux gen --desc 'Product' --no-design-thinking",
+            "Review initial version",
+            "Add competitor research: ccux gen --desc 'Product' --url https://competitor.com",
+            "Refine individual sections: ccux regen --section pricing --desc 'Updated positioning'",
+            "Experiment with themes: ccux theme aesthetic, ccux theme terminal",
+            "Final polish: ccux regen --section hero,footer"
+        ]
+        
+        for i, step in enumerate(steps_iterative, 1):
+            console.print(f"{i}. {step}")
+            
+    else:
+        console.print(f"[red]❌ Unknown help topic: {topic}[/red]")
+        console.print("Available topics: [cyan]quickstart[/cyan], [cyan]themes[/cyan], [cyan]examples[/cyan], [cyan]workflows[/cyan]")
+        console.print("Run [cyan]ccux help[/cyan] for main help menu")
+        raise typer.Exit(1)
+
+@app.command()
 def version():
     """Show version information"""
     console.print(f"[bold blue]CCUX v{__version__}[/bold blue]")
