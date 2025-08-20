@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CCUI (Claude Code UI Generator) is a sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. The tool leverages Claude AI to implement a comprehensive 12-phase design process used by professional UX agencies, combining automated competitor analysis with strategic design decisions.
+CCUX (Claude Code UI Generator) is a sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. The tool leverages Claude AI to implement a comprehensive 12-phase design process used by professional UX agencies, combining automated competitor analysis with strategic design decisions.
 
 ## Claude Integration
 
@@ -32,29 +32,29 @@ claude --print "prompt content here"
 
 ## Commands Reference
 
-### `ccui init`
-Initialize CCUI by installing required Playwright browsers.
+### `ccux init`
+Initialize CCUX by installing required Playwright browsers.
 
 **Usage:**
 ```bash
-ccui init
+ccux init
 ```
 
 **Description:** Downloads and installs Chromium browser for Playwright screenshot capture. Must be run once after installation.
 
 **Example:**
 ```bash
-ccui init
+ccux init
 ```
 
 ---
 
-### `ccui gen`
+### `ccux gen`
 Generate a conversion-optimized landing page using AI-powered design thinking.
 
 **Usage:**
 ```bash
-ccui gen [OPTIONS]
+ccux gen [OPTIONS]
 ```
 
 **Options:**
@@ -68,54 +68,54 @@ ccui gen [OPTIONS]
 
 **Interactive Mode (Recommended):**
 ```bash
-ccui gen
+ccux gen
 ```
 
 **Quick Generation Examples:**
 ```bash
 # Simple mode (faster, no design thinking)
-ccui gen --desc "AI-powered project management tool" --no-design-thinking
+ccux gen --desc "AI-powered project management tool" --no-design-thinking
 
 # With theme specification
-ccui gen --desc "Product description" --theme brutalist
+ccux gen --desc "Product description" --theme brutalist
 
 # Load from file with multiple references
-ccui gen --desc-file product_desc.txt --url https://strapi.io --url https://discord.com --theme brutalist
+ccux gen --desc-file product_desc.txt --url https://strapi.io --url https://discord.com --theme brutalist
 
 # React output with corporate theme
-ccui gen --desc "SaaS platform" --framework react --theme corporate
+ccux gen --desc "SaaS platform" --framework react --theme corporate
 
 # New modern themes
-ccui gen --desc "Design portfolio" --theme morphism
-ccui gen --desc "Developer tools" --theme terminal
-ccui gen --desc "Interactive story" --theme animated
-ccui gen --desc "Music platform" --theme aesthetic
+ccux gen --desc "Design portfolio" --theme morphism
+ccux gen --desc "Developer tools" --theme terminal
+ccux gen --desc "Interactive story" --theme animated
+ccux gen --desc "Music platform" --theme aesthetic
 
 # Additional theme examples
-ccui gen --desc "Developer tools" --theme dark
-ccui gen --desc "Marketing campaign" --theme vibrant
-ccui gen --desc "Eco-friendly products" --theme sustainable
-ccui gen --desc "Analytics dashboard" --theme data
-ccui gen --desc "Educational platform" --theme illustrated
+ccux gen --desc "Developer tools" --theme dark
+ccux gen --desc "Marketing campaign" --theme vibrant
+ccux gen --desc "Eco-friendly products" --theme sustainable
+ccux gen --desc "Analytics dashboard" --theme data
+ccux gen --desc "Educational platform" --theme illustrated
 ```
 
 **Comprehensive Analysis (Default):**
 ```bash
 # Full 12-phase design thinking process
-ccui gen --desc "AI-powered project management tool"
+ccux gen --desc "AI-powered project management tool"
 
 # With custom reference URLs
-ccui gen --url https://linear.app --desc "Project management tool"
+ccux gen --url https://linear.app --desc "Project management tool"
 ```
 
 ---
 
-### `ccui regen`
+### `ccux regen`
 Regenerate specific sections of an existing landing page.
 
 **Usage:**
 ```bash
-ccui regen [OPTIONS]
+ccux regen [OPTIONS]
 ```
 
 **Options:**
@@ -128,29 +128,29 @@ ccui regen [OPTIONS]
 **Examples:**
 ```bash
 # Regenerate hero section
-ccui regen --section hero
+ccux regen --section hero
 
 # Regenerate multiple sections
-ccui regen --section hero,features,pricing
+ccux regen --section hero,features,pricing
 
 # Regenerate all sections
-ccui regen --all
+ccux regen --all
 
 # Regenerate with custom description
-ccui regen --section hero --desc "Updated product description"
+ccux regen --section hero --desc "Updated product description"
 
 # Regenerate specific file
-ccui regen --section pricing --file custom/page.html
+ccux regen --section pricing --file custom/page.html
 ```
 
 ---
 
-### `ccui theme`
+### `ccux theme`
 Change the design theme of an existing landing page.
 
 **Usage:**
 ```bash
-ccui theme THEME [OPTIONS]
+ccux theme THEME [OPTIONS]
 ```
 
 **Arguments:**
@@ -163,43 +163,43 @@ ccui theme THEME [OPTIONS]
 **Examples:**
 ```bash
 # Change to brutalist theme
-ccui theme brutalist
+ccux theme brutalist
 
 # Change theme for specific file
-ccui theme playful --file custom/page.html
+ccux theme playful --file custom/page.html
 
 # Change to corporate theme
-ccui theme corporate
+ccux theme corporate
 
 # New modern themes
-ccui theme morphism --file portfolio.html
-ccui theme terminal --file dev-tools.html
-ccui theme animated --file interactive-story.html
-ccui theme aesthetic --file music-site.html
+ccux theme morphism --file portfolio.html
+ccux theme terminal --file dev-tools.html
+ccux theme animated --file interactive-story.html
+ccux theme aesthetic --file music-site.html
 
 # Additional theme examples
-ccui theme dark --file developer-app.html
-ccui theme vibrant --file marketing-site.html
-ccui theme sustainable --file eco-brand.html
-ccui theme data --file analytics-dashboard.html
-ccui theme illustrated --file education-platform.html
+ccux theme dark --file developer-app.html
+ccux theme vibrant --file marketing-site.html
+ccux theme sustainable --file eco-brand.html
+ccux theme data --file analytics-dashboard.html
+ccux theme illustrated --file education-platform.html
 ```
 
 **Note:** Requires a landing page generated with full design thinking process (not `--no-design-thinking`).
 
 ---
 
-### `ccui version`
+### `ccux version`
 Show version information.
 
 **Usage:**
 ```bash
-ccui version
+ccux version
 ```
 
 **Example:**
 ```bash
-ccui version
+ccux version
 ```
 
 ## Design Thinking Workflow
@@ -249,7 +249,7 @@ The tool implements a comprehensive 12-phase design process when not using `--no
 - `react`: React component with ESM imports
 
 ### Optional Configuration File
-Create `ccui.yaml` in your working directory:
+Create `ccux.yaml` in your working directory:
 
 ```yaml
 framework: html    # html or react
@@ -281,19 +281,19 @@ output_dir: output/landing-page
 
 ### Core Components
 
-1. **CLI Interface** (`src/ccui/cli.py`)
+1. **CLI Interface** (`src/ccux/cli.py`)
    - Typer-based command structure with rich terminal formatting
    - Interactive mode for guided user experience
    - Configuration loading and validation
    - Robust subprocess handling with real-time streaming
 
-2. **Web Scraping** (`src/ccui/scrape.py` & `src/ccui/scrape_simple.py`)
+2. **Web Scraping** (`src/ccux/scrape.py` & `src/ccux/scrape_simple.py`)
    - Playwright automation for screenshot capture
    - Cookie consent and modal handling
    - Multiple reference site capture with error recovery
    - Resource optimization and timeout handling
 
-3. **Prompt Templates** (`src/ccui/prompt_templates.py`)
+3. **Prompt Templates** (`src/ccux/prompt_templates.py`)
    - 12-phase design thinking methodology
    - Structured prompts for consistent outputs
    - UI/UX best practices integration
@@ -323,9 +323,9 @@ output_dir: output/landing-page
 
 ### File Structure
 ```
-src/ccui/
+src/ccux/
 ├── __init__.py          # Package initialization
-├── __main__.py          # Entry point for python -m ccui
+├── __main__.py          # Entry point for python -m ccux
 ├── cli.py              # Main CLI interface with Typer commands
 ├── prompt_templates.py  # 12-phase design thinking prompts
 ├── scrape.py           # Advanced Playwright web scraping

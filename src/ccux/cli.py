@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CCUI - Claude Code UI Generator CLI
+CCUX - Claude Code UI Generator CLI
 A sophisticated Python CLI tool that automatically generates conversion-optimized 
 frontend landing pages using professional UX design thinking methodology.
 """
@@ -53,7 +53,7 @@ from .prompt_templates import (
 )
 
 app = typer.Typer(
-    name="ccui",
+    name="ccux",
     help="Claude Code UI Generator - Automatically generate conversion-optimized landing pages",
     no_args_is_help=True,
     rich_markup_mode="rich"
@@ -90,9 +90,9 @@ def signal_handler(signum, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 class Config:
-    """Configuration management for CCUI"""
+    """Configuration management for CCUX"""
     
-    def __init__(self, config_path: str = "ccui.yaml"):
+    def __init__(self, config_path: str = "ccux.yaml"):
         self.config_path = config_path
         self.defaults = {
             'framework': 'html',
@@ -531,8 +531,8 @@ def replace_sections_in_file(file_path: str, new_sections_content: str, sections
 
 @app.command()
 def init():
-    """Initialize CCUI by installing Playwright browsers"""
-    console.print("[bold blue]🚀 Initializing CCUI...[/bold blue]")
+    """Initialize CCUX by installing Playwright browsers"""
+    console.print("[bold blue]🚀 Initializing CCUX...[/bold blue]")
     
     try:
         # Install Playwright browsers
@@ -544,12 +544,12 @@ def init():
                 check=True
             )
         
-        console.print("[bold green]✅ CCUI initialized successfully![/bold green]")
+        console.print("[bold green]✅ CCUX initialized successfully![/bold green]")
         console.print("\nYou can now run:")
-        console.print("  [bold]ccui gen --desc 'Your product description'[/bold]")
+        console.print("  [bold]ccux gen --desc 'Your product description'[/bold]")
         
     except subprocess.CalledProcessError as e:
-        console.print(f"[red]❌ Failed to initialize CCUI: {e.stderr}[/red]")
+        console.print(f"[red]❌ Failed to initialize CCUX: {e.stderr}[/red]")
         raise typer.Exit(1)
     except Exception as e:
         console.print(f"[red]❌ Error during initialization: {e}[/red]")
@@ -589,7 +589,7 @@ def gen(
             raise typer.Exit(1)
     elif not desc:
         # Interactive mode - prompt for inputs
-        console.print("[bold blue]🎨 Interactive Mode - CCUI Generator[/bold blue]")
+        console.print("[bold blue]🎨 Interactive Mode - CCUX Generator[/bold blue]")
         console.print("Let's create your landing page step by step.\n")
         
         # Get product description
@@ -920,9 +920,9 @@ def regen(
     """Regenerate specific sections of an existing landing page
     
     Examples:
-      ccui regen --section hero
-      ccui regen --section hero,features
-      ccui regen --all
+      ccux regen --section hero
+      ccux regen --section hero,features
+      ccux regen --all
     """
     
     config = Config()
@@ -938,7 +938,7 @@ def regen(
         found_files = find_landing_page_files(output_dir)
         if not found_files:
             console.print(f"[red]❌ No landing page files found in {output_dir}[/red]")
-            console.print("Run [bold]ccui gen[/bold] first to create a landing page")
+            console.print("Run [bold]ccux gen[/bold] first to create a landing page")
             raise typer.Exit(1)
         
         # Prefer React if both exist, otherwise use what's available
@@ -965,9 +965,9 @@ def regen(
     else:
         console.print("[red]❌ Must specify --section or --all[/red]")
         console.print("Examples:")
-        console.print("  [bold]ccui regen --section hero[/bold]")
-        console.print("  [bold]ccui regen --section hero,features[/bold]")
-        console.print("  [bold]ccui regen --all[/bold]")
+        console.print("  [bold]ccux regen --section hero[/bold]")
+        console.print("  [bold]ccux regen --section hero,features[/bold]")
+        console.print("  [bold]ccux regen --all[/bold]")
         raise typer.Exit(1)
     
     # Get product description
@@ -1041,8 +1041,8 @@ def theme(
     while preserving all research and wireframe data from the original generation.
     
     Examples:
-      ccui theme brutalist
-      ccui theme playful --file custom/page.html
+      ccux theme brutalist
+      ccux theme playful --file custom/page.html
     """
     
     config = Config()
@@ -1068,7 +1068,7 @@ def theme(
         found_files = find_landing_page_files(output_dir)
         if not found_files:
             console.print(f"[red]❌ No landing page files found in {output_dir}[/red]")
-            console.print("Run [bold]ccui gen[/bold] first to create a landing page")
+            console.print("Run [bold]ccux gen[/bold] first to create a landing page")
             raise typer.Exit(1)
         
         # Prefer React if both exist, otherwise use what's available
@@ -1082,7 +1082,7 @@ def theme(
     if not os.path.exists(analysis_file):
         console.print(f"[red]❌ Design analysis not found: {analysis_file}[/red]")
         console.print("This command requires a landing page generated with full design thinking process")
-        console.print("Run [bold]ccui gen --desc 'your product'[/bold] without --no-design-thinking flag")
+        console.print("Run [bold]ccux gen --desc 'your product'[/bold] without --no-design-thinking flag")
         raise typer.Exit(1)
     
     # Load existing design analysis
@@ -1189,7 +1189,7 @@ def theme(
 @app.command()
 def version():
     """Show version information"""
-    console.print(f"[bold blue]CCUI v{__version__}[/bold blue]")
+    console.print(f"[bold blue]CCUX v{__version__}[/bold blue]")
     console.print("Claude Code UI Generator")
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# CCUI — Claude Code UI Generator
+# CCUX — Claude Code UI Generator
 
 A sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. Leverages Claude AI to implement a comprehensive 12-phase design process used by professional UX agencies.
 
@@ -28,30 +28,30 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e .
 
 # 3. Initialize Playwright browsers (required for screenshot capture)
-ccui init
+ccux init
 
 # 4. Generate your first landing page
-ccui gen --desc "AI-powered project management tool"
+ccux gen --desc "AI-powered project management tool"
 ```
 
 ## 📋 Commands
 
-### `ccui init`
-Initialize CCUI by installing Playwright browsers.
+### `ccux init`
+Initialize CCUX by installing Playwright browsers.
 
-**Usage:** `ccui init`
+**Usage:** `ccux init`
 
 **Example:**
 ```bash
-ccui init
+ccux init
 ```
 
 ---
 
-### `ccui gen`
+### `ccux gen`
 Generate a conversion-optimized landing page using AI-powered design thinking.
 
-**Usage:** `ccui gen [OPTIONS]`
+**Usage:** `ccux gen [OPTIONS]`
 
 **Options:**
 - `--desc, -d TEXT`: Product description
@@ -65,24 +65,24 @@ Generate a conversion-optimized landing page using AI-powered design thinking.
 **Examples:**
 ```bash
 # Interactive mode (recommended)
-ccui gen
+ccux gen
 
 # Quick generation without design thinking
-ccui gen --desc "AI project management tool" --no-design-thinking
+ccux gen --desc "AI project management tool" --no-design-thinking
 
 # Full analysis with custom references and theme
-ccui gen --url https://linear.app --desc "Project management tool" --theme brutalist
+ccux gen --url https://linear.app --desc "Project management tool" --theme brutalist
 
 # Load from file with React output
-ccui gen --desc-file product_desc.txt --framework react --theme corporate
+ccux gen --desc-file product_desc.txt --framework react --theme corporate
 ```
 
 ---
 
-### `ccui regen`
+### `ccux regen`
 Regenerate specific sections of an existing landing page.
 
-**Usage:** `ccui regen [OPTIONS]`
+**Usage:** `ccux regen [OPTIONS]`
 
 **Options:**
 - `--section, -s TEXT`: Sections to regenerate (comma-separated)
@@ -94,21 +94,21 @@ Regenerate specific sections of an existing landing page.
 **Examples:**
 ```bash
 # Regenerate hero section
-ccui regen --section hero
+ccux regen --section hero
 
 # Regenerate multiple sections
-ccui regen --section hero,features,pricing
+ccux regen --section hero,features,pricing
 
 # Regenerate all sections
-ccui regen --all
+ccux regen --all
 ```
 
 ---
 
-### `ccui theme`
+### `ccux theme`
 Change the design theme of an existing landing page.
 
-**Usage:** `ccui theme THEME [OPTIONS]`
+**Usage:** `ccux theme THEME [OPTIONS]`
 
 **Options:**
 - `--file, -f FILE`: Path to landing page file
@@ -117,22 +117,22 @@ Change the design theme of an existing landing page.
 **Examples:**
 ```bash
 # Change to brutalist theme
-ccui theme brutalist
+ccux theme brutalist
 
 # Change theme for specific file
-ccui theme playful --file custom/page.html
+ccux theme playful --file custom/page.html
 ```
 
 ---
 
-### `ccui version`
+### `ccux version`
 Show version information.
 
-**Usage:** `ccui version`
+**Usage:** `ccux version`
 
 **Example:**
 ```bash
-ccui version
+ccux version
 ```
 
 ## 🎨 Themes
@@ -165,7 +165,7 @@ ccui version
 
 ## ⚙️ Configuration
 
-Create optional `ccui.yaml` in your working directory:
+Create optional `ccux.yaml` in your working directory:
 
 ```yaml
 framework: html    # html or react
@@ -179,7 +179,7 @@ CLI flags always override config values.
 
 ## 🔬 Design Thinking Process
 
-When not using `--no-design-thinking`, CCUI implements a 12-phase professional UX methodology:
+When not using `--no-design-thinking`, CCUX implements a 12-phase professional UX methodology:
 
 1. **Reference Discovery** - Auto-finds competitors using Claude AI
 2. **Screenshot Capture** - Captures competitor landing pages
@@ -210,14 +210,14 @@ npx serve output/landing-page -p 3000
 
 - **Long Descriptions**: Files >100 words are automatically summarized to optimize processing
 - **Reference Limit**: Maximum 3 reference URLs for optimal performance
-- **Interactive Mode**: Run `ccui gen` without options for guided setup
-- **Section Updates**: Use `ccui regen` to update specific parts without rebuilding
-- **Theme Changes**: Use `ccui theme` to redesign with preserved content
+- **Interactive Mode**: Run `ccux gen` without options for guided setup
+- **Section Updates**: Use `ccux regen` to update specific parts without rebuilding
+- **Theme Changes**: Use `ccux theme` to redesign with preserved content
 
 ## 🆘 Troubleshooting
 
 - **Claude CLI Issues**: Ensure `claude` command is accessible on PATH
-- **Playwright Errors**: Run `ccui init` to install required browsers
+- **Playwright Errors**: Run `ccux init` to install required browsers
 - **Screenshot Failures**: Tool continues without screenshots if capture fails
 - **Generation Errors**: Try `--no-design-thinking` for simpler processing
 - **Memory Issues**: Tool automatically cleans up between operations

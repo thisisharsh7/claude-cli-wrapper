@@ -17,7 +17,7 @@ def test_cli_generation():
     try:
         # Test with simple generation (no design thinking)
         cmd = [
-            sys.executable, "-m", "src.ccui.cli", "gen",
+            sys.executable, "-m", "src.ccux.cli", "gen",
             "--desc", "Simple test app for developers", 
             "--no-design-thinking",
             "--framework", "html",

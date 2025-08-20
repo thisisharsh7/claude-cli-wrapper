@@ -4,14 +4,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ccui"
+name = "ccux"
 version = "0.1.0"
 description = "A sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-    {name = "CCUI Team"}
+    {name = "CCUX Team"}
 ]
 keywords = ["ui", "ux", "landing-page", "generator", "claude", "ai", "design", "frontend"]
 classifiers = [
@@ -36,4 +36,4 @@ dependencies = [
 ]
 
 [project.scripts]
-ccui = "ccui.cli:app"
+ccux = "ccux.cli:app"

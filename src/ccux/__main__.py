@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Entry point for ccui when run as a module."""
+"""Entry point for ccux when run as a module."""
 
 from .cli import app
 

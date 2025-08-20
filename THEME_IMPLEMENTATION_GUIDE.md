@@ -1,8 +1,8 @@
-# CCUI Theme Implementation Guide
+# CCUX Theme Implementation Guide
 
 ## Overview
 
-This guide provides comprehensive information about CCUI's enhanced theme system, based on modern design theory and UX principles.
+This guide provides comprehensive information about CCUX's enhanced theme system, based on modern design theory and UX principles.
 
 ## Available Themes
 
@@ -243,14 +243,14 @@ If you're upgrading from the original 4-theme system:
 
 ```bash
 # Generate with new themes
-ccui gen --desc "Your product" --theme morphism
-ccui gen --desc "Developer tool" --theme terminal
-ccui gen --desc "Creative platform" --theme aesthetic
-ccui gen --desc "Interactive story" --theme animated
+ccux gen --desc "Your product" --theme morphism
+ccux gen --desc "Developer tool" --theme terminal
+ccux gen --desc "Creative platform" --theme aesthetic
+ccux gen --desc "Interactive story" --theme animated
 
 # Change existing themes
-ccui theme morphism
-ccui theme terminal --file custom/page.html
+ccux theme morphism
+ccux theme terminal --file custom/page.html
 ```
 
 ## Troubleshooting
