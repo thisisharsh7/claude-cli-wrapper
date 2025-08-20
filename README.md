@@ -13,8 +13,6 @@ That's why I built CCUX — a CLI tool that harnesses the power of Claude AI to 
 - 🖥️ **Terminal-native**: Built by developers, for developers
 - 🆓 **Free to use**: Only requires Claude CLI (which you probably already have)
 
-A sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. Leverages Claude AI to implement a comprehensive 12-phase design process used by professional UX agencies.
-
 ## ✨ What it does
 
 1. **Automated Competitive Research**: Discovers 3 competitor websites and design showcases
@@ -26,7 +24,7 @@ A sophisticated Python CLI tool that automatically generates conversion-optimize
 
 ## 🧰 Prerequisites
 
-- **Claude CLI**: The only requirement! Install from [claude.ai/code](https://claude.ai/code)
+- **Claude CLI**: The only requirement! Install from [claude.ai/code](https://www.anthropic.com/claude-code)
 - Python 3.9 or higher
 - macOS/Linux/Windows (WSL recommended for Windows)
 
