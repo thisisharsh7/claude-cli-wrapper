@@ -1,5 +1,18 @@
 # CCUX — Claude Code UI Generator
 
+> **Built for developers who live in the terminal**
+
+As a developer, I spend most of my time in the terminal. I love the efficiency, the speed, and the control it gives me over my workflow. But when it came to creating landing pages, I found myself switching between multiple tools, spending hours on design decisions, and often ending up with mediocre results.
+
+That's why I built CCUX — a CLI tool that harnesses the power of Claude AI to generate professional, conversion-optimized landing pages in minutes, not hours. It implements the same 12-phase design methodology that UX agencies charge thousands for, but right from your terminal.
+
+**Why CCUX?**
+- ⚡ **Save time**: Generate professional landing pages in minutes
+- 🧠 **AI-powered design thinking**: Uses Claude's intelligence for UX research and competitive analysis  
+- 🎯 **Conversion-optimized**: Not just pretty pages, but pages that actually convert
+- 🖥️ **Terminal-native**: Built by developers, for developers
+- 🆓 **Free to use**: Only requires Claude CLI (which you probably already have)
+
 A sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. Leverages Claude AI to implement a comprehensive 12-phase design process used by professional UX agencies.
 
 ## ✨ What it does
@@ -13,11 +26,41 @@ A sophisticated Python CLI tool that automatically generates conversion-optimize
 
 ## 🧰 Prerequisites
 
+- **Claude CLI**: The only requirement! Install from [claude.ai/code](https://claude.ai/code)
 - Python 3.9 or higher
-- Claude CLI tool installed and configured
 - macOS/Linux/Windows (WSL recommended for Windows)
 
-## 🚀 Setup and Installation
+**👆 That's it!** If you're already using Claude Code CLI, you're ready to go.
+
+## 🚀 Quick Start
+
+**Got 2 minutes? Here's how to generate your first professional landing page:**
+
+```bash
+# Install CCUX
+pip install ccux
+
+# Initialize (downloads browser for screenshots)
+ccux init
+
+# Generate with just a description
+ccux gen --desc "AI-powered project management tool"
+
+# Or add reference websites for inspiration
+ccux gen --desc "Project management SaaS" --url https://linear.app --url https://notion.so
+```
+
+**That's it!** Your conversion-optimized landing page will be generated in the `output/landing-page` directory with full UX research, competitive analysis, and professional design.
+
+### 🎯 Perfect for Claude Code CLI Users
+
+If you're already using Claude for coding, CCUX integrates seamlessly:
+- **Same AI, specialized for design**: Leverages Claude's intelligence for UX research
+- **Reference websites**: Add up to 3 URLs and CCUX will analyze them for design inspiration
+- **Terminal-first workflow**: No context switching, no GUI tools, just pure CLI efficiency
+- **Production-ready output**: Generated code follows modern standards (TailwindCSS, semantic HTML, accessibility)
+
+## 🚀 Installation Options
 
 ### Install from PyPI (Recommended)
 
