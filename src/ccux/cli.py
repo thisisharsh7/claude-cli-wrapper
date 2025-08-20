@@ -13,6 +13,7 @@ import threading
 import subprocess
 import signal
 import re
+import importlib.metadata
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from urllib.parse import urlparse
@@ -25,8 +26,6 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.status import Status
 from rich.table import Table
 from rich.prompt import Prompt, Confirm
-
-from . import __version__
 from .scrape import capture_multiple_references
 from .scrape_simple import capture
 from .theme_specifications import (
@@ -1435,7 +1434,12 @@ def help(
 @app.command()
 def version():
     """Show version information"""
-    console.print(f"[bold blue]CCUX v{__version__}[/bold blue]")
+    try:
+        package_version = importlib.metadata.version('ccux')
+    except importlib.metadata.PackageNotFoundError:
+        package_version = 'unknown'
+    
+    console.print(f"[bold blue]CCUX v{package_version}[/bold blue]")
     console.print("Claude Code UI Generator")
 
 if __name__ == "__main__":
