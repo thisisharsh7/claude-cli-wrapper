@@ -19,18 +19,41 @@ A sophisticated Python CLI tool that automatically generates conversion-optimize
 
 ## 🚀 Setup and Installation
 
+### Install from PyPI (Recommended)
+
 ```bash
-# 1. Create and activate virtual environment
+# Install directly from PyPI
+pip install ccux
+
+# Initialize Playwright browsers (required for screenshot capture)
+ccux init
+
+# Generate your first landing page
+ccux gen --desc "AI-powered project management tool"
+```
+
+**📦 PyPI Package**: [https://pypi.org/project/ccux/](https://pypi.org/project/ccux/)
+
+**🐙 GitHub Repository**: [https://github.com/thisisharsh7/claude-cli-wrapper](https://github.com/thisisharsh7/claude-cli-wrapper)
+
+### Development Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/thisisharsh7/claude-cli-wrapper.git
+cd claude-cli-wrapper
+
+# 2. Create and activate virtual environment
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# 2. Install package in development mode
+# 3. Install package in development mode
 pip install -e .
 
-# 3. Initialize Playwright browsers (required for screenshot capture)
+# 4. Initialize Playwright browsers (required for screenshot capture)
 ccux init
 
-# 4. Generate your first landing page
+# 5. Generate your first landing page
 ccux gen --desc "AI-powered project management tool"
 ```
 
