@@ -4,248 +4,173 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CCUX (Claude Code UI Generator) is a sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. The tool leverages Claude AI to implement a comprehensive 12-phase design process used by professional UX agencies, combining automated competitor analysis with strategic design decisions.
+CCUX (Claude Code UI Generator) is a sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology. The tool features both command-line and interactive interfaces, leveraging Claude AI to implement a comprehensive 12-phase design process used by professional UX agencies.
 
-## Claude Integration
+### Architecture
+- **Interactive Interface** (`src/ccux/interactive.py`): Rich terminal application with project management
+- **CLI Commands** (`src/ccux/cli_old.py`): Direct command-line interface for automation
+- **Theme System** (`src/ccux/theme_specifications.py`): 13 professional design themes
+- **Prompt Templates** (`src/ccux/prompt_templates.py`): 12-phase design methodology prompts
+- **Web Scraping** (`src/ccux/scrape.py`, `src/ccux/scrape_simple.py`): Competitor analysis automation
 
-### Purpose of Claude Integration
-This project integrates with the Claude CLI to provide automated UI/UX design intelligence. Claude AI powers:
+## Core Capabilities
 
-1. **Reference Discovery**: Automatically finds 3 competitor websites based on product descriptions
-2. **Design Analysis**: Analyzes captured screenshots for UI patterns, strengths, and weaknesses
-3. **User Research**: Creates empathy maps, personas, and user journeys
-4. **Strategic Copy**: Generates conversion-optimized copy based on competitive analysis
-5. **Code Generation**: Produces production-ready HTML/React components with TailwindCSS
+### 🎨 Interactive Application
+The main interface launched with `ccux init`:
+- **Project Creation Wizard**: Guided landing page generation with theme/form selection
+- **Multi-Project Management**: Discover, select, and manage multiple projects
+- **Visual Section Editing**: Number-based section selection with live feedback  
+- **Theme Switching**: Interactive theme selection with preview
+- **Form Management**: Add, remove, customize contact forms with visual feedback
+- **Smart Detection**: Auto-detects themes, sections, and project configurations
 
-### Claude CLI Usage
-The tool invokes Claude CLI using:
-```bash
-claude --print "prompt content here"
-```
+### 🚀 AI-Powered Generation
+Implements professional UX methodology:
+- **Reference Discovery**: Automatically finds 3 competitor websites using Claude AI
+- **Screenshot Capture**: Uses Playwright to capture competitor landing pages
+- **12-Phase Design Process**: Complete UX research including personas, empathy maps, user journeys
+- **Strategic Copywriting**: Conversion-optimized headlines and content based on research
+- **Design Systems**: Consistent visual languages with proper typography and color schemes
 
-**Special Notes:**
-- **Timeout Protection**: 5-minute timeout per Claude invocation to prevent hanging
-- **Token Management**: Automatically summarizes product descriptions >100 words to 100-150 words to optimize token usage
-- **Usage Tracking**: Parses and displays input tokens, output tokens, and estimated costs from stderr
-- **Error Handling**: Graceful error capture with user-friendly messages
-- **Streaming Output**: Real-time progress indication during Claude processing
+### 🎭 13 Professional Themes
+**Core Themes:**
+- `minimal`: Clean, content-focused design (Dieter Rams principles)  
+- `brutalist`: Raw, honest design (Brutalist architecture inspired)
+- `playful`: Joyful, approachable design with organic shapes
+- `corporate`: Traditional, trustworthy business design
+
+**Modern Themes:**
+- `morphism`: Soft, tactile design (neumorphism + glassmorphism)
+- `animated`: Motion-first design where animation drives experience  
+- `terminal`: Monospace, CLI-inspired aesthetic for developers
+- `aesthetic`: Retro-futuristic Y2K and vaporwave styling
+
+**Specialized Themes:**
+- `dark`: Modern dark theme optimized for reduced eye strain
+- `vibrant`: Colorful, dopamine-rich design that energizes users
+- `sustainable`: Nature-inspired design for eco-conscious brands
+- `data`: Information-dense design for dashboards and analytics  
+- `illustrated`: Hand-drawn, custom illustration-driven design
+
+### ⚡ Advanced Section Management
+- **Precision Targeting**: Regenerate only specific sections (hero, features, pricing, footer, etc.)
+- **Content Preservation**: Maintains untouched sections exactly as they are
+- **Smart Context Detection**: Auto-detects product description from `design_analysis.json`
+- **Theme Consistency**: Preserves visual design while updating content
+- **Section Detection**: Automatically identifies available sections in HTML
 
 ## Commands Reference
 
 ### `ccux init`
-Initialize CCUX by installing required Playwright browsers.
+Launch CCUX Interactive Application (Main Entry Point)
 
-**Usage:**
-```bash
-ccux init
-```
+**Description:** The primary interface providing guided project creation, management, and customization through rich terminal menus.
 
-**Description:** Downloads and installs Chromium browser for Playwright screenshot capture. Must be run once after installation.
-
-**Example:**
-```bash
-ccux init
-```
-
----
+**Features:**
+- Project creation wizard with theme and form selection  
+- Multi-project management and discovery
+- Visual section regeneration with numbered selection
+- Interactive theme switching with live preview
+- Form management (contact, newsletter, signup forms)
+- Built-in help system and workflows
 
 ### `ccux gen`
-Generate a conversion-optimized landing page using AI-powered design thinking.
-
-**Usage:**
-```bash
-ccux gen [OPTIONS]
-```
+Generate conversion-optimized landing page using AI design methodology
 
 **Options:**
 - `--desc, -d TEXT`: Product description
-- `--desc-file FILE`: Path to file containing product description
-- `--url, -u URL`: Reference URLs (can be used multiple times, max 3)
+- `--desc-file FILE`: Path to file containing product description  
+- `--url, -u URL`: Reference URLs (max 3, can be used multiple times)
 - `--framework, -f [html|react]`: Output framework (default: html)
-- `--theme, -t [minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated]`: Design theme (default: minimal)
-- `--no-design-thinking`: Skip full design thinking process for faster generation
+- `--theme, -t THEME`: Design theme (default: minimal)
+- `--no-design-thinking`: Skip full design process for faster generation
 - `--include-forms`: Include contact forms in the landing page
-- `--output, -o DIR`: Output directory (default: output/landing-page)
+- `--output, -o DIR`: Output directory
 
-**Interactive Mode (Recommended):**
+**Examples:**
 ```bash
+# Interactive mode (recommended)
 ccux gen
+
+# Full design process with theme
+ccux gen --desc "AI project management tool" --theme brutalist
+
+# Fast generation mode
+ccux gen --desc "SaaS platform" --no-design-thinking
+
+# With competitor analysis
+ccux gen --desc "Video platform" --url https://loom.com --url https://vimeo.com
+
+# React output with forms
+ccux gen --desc "Landing page" --framework react --include-forms
 ```
-
-**Quick Generation Examples:**
-```bash
-# Simple mode (faster, no design thinking)
-ccux gen --desc "AI-powered project management tool" --no-design-thinking
-
-# With theme specification
-ccux gen --desc "Product description" --theme brutalist
-
-# Load from file with multiple references
-ccux gen --desc-file product_desc.txt --url https://strapi.io --url https://discord.com --theme brutalist
-
-# React output with corporate theme
-ccux gen --desc "SaaS platform" --framework react --theme corporate
-
-# New modern themes
-ccux gen --desc "Design portfolio" --theme morphism
-ccux gen --desc "Developer tools" --theme terminal
-ccux gen --desc "Interactive story" --theme animated
-ccux gen --desc "Music platform" --theme aesthetic
-
-# Additional theme examples
-ccux gen --desc "Developer tools" --theme dark
-ccux gen --desc "Marketing campaign" --theme vibrant
-ccux gen --desc "Eco-friendly products" --theme sustainable
-ccux gen --desc "Analytics dashboard" --theme data
-ccux gen --desc "Educational platform" --theme illustrated
-```
-
-**Comprehensive Analysis (Default):**
-```bash
-# Full 12-phase design thinking process
-ccux gen --desc "AI-powered project management tool"
-
-# With custom reference URLs
-ccux gen --url https://linear.app --desc "Project management tool"
-
-# With contact forms included
-ccux gen --desc "Contact us for services" --include-forms
-```
-
----
 
 ### `ccux regen`
-Regenerate specific sections of an existing landing page.
+Regenerate specific sections of existing landing pages
 
-**Usage:**
-```bash
-ccux regen [OPTIONS]
-```
-
-**Options:**
+**Options:**  
 - `--section, -s TEXT`: Section(s) to regenerate (comma-separated)
 - `--all`: Regenerate all sections
 - `--desc, -d TEXT`: Product description (auto-detected if not provided)
 - `--file, -f FILE`: Path to landing page file
 - `--output, -o DIR`: Output directory
 
+**Key Features:**
+- **Precision Targeting**: Only regenerates specified sections
+- **Smart Context**: Auto-detects product description from project metadata
+- **Theme Preservation**: Maintains existing design consistency
+- **Section Detection**: Automatically identifies available sections
+
 **Examples:**
 ```bash
-# Regenerate hero section
+# Regenerate hero section only
 ccux regen --section hero
 
-# Regenerate multiple sections
+# Regenerate multiple sections  
 ccux regen --section hero,features,pricing
 
 # Regenerate all sections
 ccux regen --all
 
-# Regenerate with custom description
-ccux regen --section hero --desc "Updated product description"
-
-# Regenerate specific file
+# Target specific file
 ccux regen --section pricing --file custom/page.html
 ```
 
----
-
 ### `ccux editgen`
-Edit specific parts of existing landing page while preserving design theme and layout.
+Edit specific content in landing pages using natural language instructions
 
-**Usage:**
-```bash
-ccux editgen INSTRUCTION [OPTIONS]
-```
-
-**Arguments:**
-- `INSTRUCTION`: Specific edit instruction describing what to change
+**Usage:** `ccux editgen INSTRUCTION [OPTIONS]`
 
 **Options:**
 - `--desc, -d TEXT`: Product description (auto-detected if not provided)
 - `--file, -f FILE`: Path to landing page file
-- `--output, -o DIR`: Output directory  
-- `--sections, -s TEXT`: Specific sections to focus changes on (comma-separated)
+- `--output, -o DIR`: Output directory
+- `--sections, -s TEXT`: Focus changes on specific sections (comma-separated)
 
 **Examples:**
 ```bash
 # Basic content edits
-ccux editgen "Change the hero headline to 'Revolutionary AI Platform'"
-ccux editgen "Update the pricing to show monthly rates instead of annual"
-ccux editgen "Replace the call-to-action button text with 'Start Free Trial'"
+ccux editgen "Change hero headline to 'Revolutionary AI Platform'"
+ccux editgen "Update pricing to show monthly rates"
 
-# Focused section edits
-ccux editgen "Add a new feature about real-time collaboration" --sections features
-ccux editgen "Update testimonials with quotes from enterprise clients" --sections testimonials
+# Section-focused edits  
+ccux editgen "Add real-time collaboration feature" --sections features
+ccux editgen "Update testimonials with enterprise quotes" --sections testimonials
 
-# Content replacement and additions
-ccux editgen "Replace the hero image with a product screenshot"
-ccux editgen "Add a FAQ section explaining the pricing model"
-ccux editgen "Change the company description to focus on AI automation"
-
-# Target specific files
-ccux editgen "Update contact information" --file custom/page.html
-ccux editgen "Add mobile app download links" --file portfolio/index.html
-
-# Complex edits with section targeting
-ccux editgen "Redesign the features section to use a grid layout with icons" --sections features
-ccux editgen "Update hero and pricing sections for enterprise focus" --sections hero,pricing
+# Content additions
+ccux editgen "Add FAQ section about pricing model"
+ccux editgen "Replace hero image with product screenshot"
 ```
-
-**Description:** The editgen command provides precise, targeted editing of landing pages while maintaining the overall design theme, layout, and functionality. Unlike regenerating entire sections, editgen makes surgical changes to specific content, text, or elements as requested.
-
-**Key Features:**
-- **Theme Preservation**: Automatically detects and preserves the existing design theme (minimal, brutalist, corporate, etc.)
-- **Layout Integrity**: Maintains overall page structure, spacing, and visual hierarchy
-- **Functionality Protection**: Preserves all navigation, forms, CTAs, animations, and interactive elements
-- **Smart Context**: Auto-detects product description and page context from existing design analysis
-- **Section Targeting**: Optional focus on specific sections while preserving others
-- **Edit History**: Tracks all edits in design analysis for audit trail
-- **Content Intelligence**: Makes contextually appropriate changes that fit the existing tone and style
-
-**What You Can Edit:**
-- Text content, headlines, copy, and messaging
-- Pricing information and call-to-action text  
-- Feature descriptions and benefits
-- Testimonials and customer quotes
-- Company descriptions and value propositions
-- Contact information and links
-- Image alt text and descriptions
-- Add new content sections or elements
-- Modify existing content structure within sections
-
-**What Stays Preserved:**
-- Design theme styling (colors, fonts, spacing, shadows)
-- Overall layout and visual hierarchy
-- Navigation system and smooth scrolling
-- Form functionality and CTA links
-- Animation system and interactive elements  
-- Responsive breakpoints and mobile compatibility
-- Section markers for future regeneration
-- All CSS classes and design system patterns
-
-**Usage Tips:**
-- Be specific in your edit instructions for best results
-- Use `--sections` to focus changes and avoid unintended modifications
-- The command auto-detects theme and context from existing files
-- Edit history is preserved in design_analysis.json for tracking changes
-- Works with both HTML and React framework outputs
-- Can handle both simple text changes and complex content restructuring
-
----
 
 ### `ccux theme`
-Change the design theme of an existing landing page.
+Change the visual theme of existing landing pages
 
-**Usage:**
-```bash
-ccux theme THEME [OPTIONS]
-```
+**Usage:** `ccux theme THEME [OPTIONS]`
 
-**Arguments:**
-- `THEME`: New design theme (minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated)
+**Arguments:** `THEME` - New theme name (minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated)
 
 **Options:**
-- `--file, -f FILE`: Path to landing page file
+- `--file, -f FILE`: Path to landing page file  
 - `--output, -o DIR`: Output directory
 
 **Examples:**
@@ -254,338 +179,183 @@ ccux theme THEME [OPTIONS]
 ccux theme brutalist
 
 # Change theme for specific file
-ccux theme playful --file custom/page.html
-
-# Change to corporate theme
-ccux theme corporate
-
-# New modern themes
 ccux theme morphism --file portfolio.html
-ccux theme terminal --file dev-tools.html
-ccux theme animated --file interactive-story.html
-ccux theme aesthetic --file music-site.html
 
-# Additional theme examples
-ccux theme dark --file developer-app.html
-ccux theme vibrant --file marketing-site.html
-ccux theme sustainable --file eco-brand.html
-ccux theme data --file analytics-dashboard.html
-ccux theme illustrated --file education-platform.html
+# Interactive theme selection (leave theme empty)
+ccux theme
 ```
-
-**Note:** Requires a landing page generated with full design thinking process (not `--no-design-thinking`).
-
----
 
 ### `ccux form`
-Advanced form control with detailed customization including type, fields, styling, and placement.
+Advanced form control with detailed customization
 
-**Usage:**
-```bash
-ccux form STATE [OPTIONS]
-```
+**Usage:** `ccux form STATE [OPTIONS]`
 
-**Arguments:**
-- `STATE`: Form inclusion state (on|off|edit)
+**Arguments:** `STATE` - Form action (on|off|edit)
 
 **Options:**
 - `--file, -f FILE`: Path to landing page file
-- `--output, -o DIR`: Output directory
+- `--output, -o DIR`: Output directory  
 - `--type, -t TYPE`: Form type (contact|newsletter|signup|custom)
 - `--fields FIELDS`: Comma-separated field list (name,email,phone,message,company,website,subject)
 - `--style, -s STYLE`: Form style (inline|modal|sidebar|fullpage)
-- `--cta TEXT`: Custom CTA button text
+- `--cta TEXT`: Custom call-to-action button text
+
+**Form Types:**
+- `contact`: General contact form with name, email, message
+- `newsletter`: Simple email signup form
+- `signup`: Registration form with multiple user fields
+- `custom`: Custom field configuration
+
+**Form Styles:**
+- `inline`: Embedded directly in page sections
+- `modal`: Popup modal overlay with click trigger
+- `sidebar`: Fixed position sidebar form  
+- `fullpage`: Dedicated full-width form section
 
 **Examples:**
 ```bash
 # Basic form control
-ccux form on                                    # Add basic contact forms
-ccux form off                                   # Remove all forms
+ccux form on                    # Add contact forms
+ccux form off                   # Remove all forms
 
-# Advanced form customization
+# Advanced customization  
 ccux form edit --type contact --fields name,email,message --cta "Get In Touch"
-ccux form edit --type newsletter --fields email --style inline --cta "Subscribe Now"
-ccux form edit --type signup --fields name,email,phone --style modal --cta "Join Beta"
-ccux form edit --type custom --fields name,email,company,website --style fullpage
-
-# Target specific files
-ccux form on --file custom/page.html
-ccux form edit --type contact --fields name,email --file portfolio.html
+ccux form edit --type newsletter --style inline --cta "Subscribe Now"
+ccux form edit --type signup --fields name,email,phone --style modal
 ```
-
-**Form Types:**
-- **contact**: General contact form with name, email, message fields
-- **newsletter**: Simple email signup form for subscriptions
-- **signup**: Registration form with multiple user fields
-- **custom**: Specify your own field configuration
-
-**Form Fields Available:**
-- `name`: Full name input field
-- `email`: Email address (required for most forms)
-- `phone`: Phone number with tel input type
-- `message`: Textarea for longer messages
-- `company`: Company/organization name
-- `website`: Website URL with validation
-- `subject`: Subject line for contact forms
-
-**Form Styles:**
-- **inline**: Embedded directly in page sections (hero, footer, contact)
-- **modal**: Popup modal overlay with click-to-open trigger
-- **sidebar**: Fixed position sidebar form (right side of screen)
-- **fullpage**: Dedicated full-width form section with prominent placement
-
-**Key Features:**
-- **Interactive Setup**: Run `ccux form edit` without arguments for guided form creation
-- **Theme Integration**: All forms automatically match page theme (brutalist, minimal, corporate, etc.)
-- **Smart Field Validation**: Proper input types, required attributes, and accessibility labels
-- **Custom CTA Text**: Personalize button text for your brand voice
-- **Mobile Responsive**: Forms adapt to all screen sizes with proper breakpoints
-- **Accessibility Compliant**: WCAG guidelines with proper labeling and focus states
-- **CLI-first Control**: Complete form management without touching code
-
----
-
 
 ### `ccux help`
-Show comprehensive help and usage examples with different topics.
+Comprehensive help system with specialized topics
 
-**Usage:**
-```bash
-ccux help [TOPIC]
-```
+**Usage:** `ccux help [TOPIC]`
 
 **Topics:**
-- `quickstart`: Complete getting started guide with step-by-step instructions
-- `themes`: All available design themes with detailed descriptions and use cases  
-- `examples`: Common usage patterns, commands, and practical scenarios
-- `workflows`: Step-by-step workflows for different user types and goals
+- `quickstart`: Step-by-step setup guide for new users
+- `themes`: Complete theme guide with descriptions and use cases
+- `examples`: Common usage patterns and practical scenarios  
+- `workflows`: Step-by-step workflows for different user types
 
-**Examples:**
-```bash
-# Show main help menu with command overview and quick start
-ccux help
+### `ccux projects`
+List and discover existing CCUX projects in current directory
 
-# Get detailed quickstart guide for new users
-ccux help quickstart
-
-# Browse all 13 available themes with descriptions
-ccux help themes
-
-# View common usage examples and patterns
-ccux help examples
-
-# Learn step-by-step workflows for different scenarios
-ccux help workflows
-```
-
-**Description:** This comprehensive help system makes CCUX more user-friendly by providing:
-- Interactive command reference with examples
-- Progressive learning from basic to advanced usage
-- Self-service documentation built into the tool
-- Real-world workflows for different use cases
-- Complete theme guide with descriptions and usage patterns
-
----
+**Features:**
+- Discovers all projects with both `index.html` and `design_analysis.json`
+- Shows project names extracted from content or metadata
+- Displays project status and directory information
 
 ### `ccux version`
-Show version information.
+Show version information and basic usage guidance
 
-**Usage:**
-```bash
-ccux version
-```
+## Design Workflow
 
-**Example:**
-```bash
-ccux version
-```
+CCUX implements a comprehensive 12-phase professional design methodology:
 
-## Design Thinking Workflow
-
-The tool implements a comprehensive 12-phase design process when not using `--no-design-thinking`:
-
-1. **Reference Discovery** - Auto-finds 3 competitor sites using Claude AI
-2. **Screenshot Capture** - Playwright automation captures competitor landing pages
-3. **Deep Product Understanding** - Value proposition analysis and problem identification
-4. **Competitive UX Analysis** - Screenshot analysis for patterns and weaknesses
-5. **User Empathy Mapping** - User research and persona development
+1. **Reference Discovery** - Auto-finds competitor websites using Claude AI
+2. **Screenshot Capture** - Playwright automation captures competitor pages  
+3. **Deep Product Understanding** - Value proposition and problem analysis
+4. **Competitive UX Analysis** - Screenshot analysis for patterns and opportunities
+5. **User Empathy Mapping** - User research, personas, and pain points
 6. **Define Site Flow** - Journey mapping and lean sitemap creation
 7. **Content Strategy** - Strategic copy development before visual design
-8. **Wireframe Validation** - Mobile-first layout validation
-9. **Design System** - Typography, colors, WCAG compliance
-10. **High-Fidelity Design** - Interactive elements and polish
-11. **Final Copy Generation** - Professional conversion copy refinement
-12. **Implementation** - Code generation with strategic design decisions
+8. **Wireframe Validation** - Mobile-first layout structure validation
+9. **Design System** - Typography, colors, spacing, WCAG compliance
+10. **High-Fidelity Design** - Interactive elements and visual polish
+11. **Final Copy Generation** - Conversion-optimized copy refinement
+12. **Implementation** - Production-ready code generation
+
+## Output Structure
+
+### Generated Files
+- `index.html` or `App.jsx` - Main landing page file
+- `design_analysis.json` - Complete design research and metadata
+- `*.jpg` - Competitor screenshot references (when applicable)
+
+### HTML Features
+- **Semantic Structure** with proper heading hierarchy and ARIA labels
+- **TailwindCSS Styling** with custom design system implementation
+- **Responsive Design** with mobile-first breakpoints  
+- **SEO Optimization** with meta tags and schema markup
+- **Performance** with optimized images and minimal dependencies
+- **Section Markers** with HTML comments for precise regeneration
+- **Accessibility** following WCAG guidelines
+
+### Section Identification
+Pages use HTML comment markers for section management:
+```html
+<!-- START: hero -->
+<section id="hero">...</section>
+<!-- END: hero -->
+
+<!-- START: features -->  
+<section id="features">...</section>
+<!-- END: features -->
+```
+
+## Claude Integration
+
+### AI Processing
+- **Claude CLI Integration**: Uses `claude --print` for AI processing
+- **Timeout Protection**: 5-minute timeout per Claude invocation
+- **Usage Tracking**: Displays input/output tokens and estimated costs
+- **Error Handling**: Graceful fallbacks with user-friendly messages
+- **Streaming Output**: Real-time progress indication during generation
+
+### Token Optimization
+- **Smart Summarization**: Auto-summarizes product descriptions >100 words to optimize usage
+- **Screenshot Compression**: JPEG compression for captured images
+- **Reference Limits**: Maximum 3 competitor URLs to prevent prompt bloat
+- **Context Management**: Efficient prompt structuring for optimal results
 
 ## Configuration
 
-### Available Themes
-
-#### Core Themes
-- `minimal`: Clean, content-focused design following Dieter Rams' principles of good design
-- `brutalist`: Raw, honest design inspired by Brutalist architecture - bold and uncompromising
-- `playful`: Joyful, approachable design using organic shapes and vibrant colors
-- `corporate`: Traditional, trustworthy design following established business conventions
-
-#### Modern Design Theory Themes
-- `morphism`: Soft, tactile design combining neumorphism and glassmorphism principles
-- `animated`: Motion-first design where animation drives user experience and storytelling
-- `terminal`: Monospace, CLI-inspired aesthetic appealing to developers and tech enthusiasts
-- `aesthetic`: Retro-futuristic design drawing from Y2K, vaporwave, and cyber aesthetics
-
-#### Additional Theme Options
-- `dark`: Modern dark theme optimized for contrast and reduced eye strain
-- `vibrant`: Colorful, dopamine-rich design that energizes user interactions
-- `sustainable`: Nature-inspired design emphasizing eco-conscious branding
-- `data`: Information-dense design optimized for dashboards and analytics
-- `illustrated`: Hand-drawn, custom illustration-driven design for humanized experiences
-
-**For detailed theme specifications, use cases, and implementation guidelines, see [THEME_IMPLEMENTATION_GUIDE.md](THEME_IMPLEMENTATION_GUIDE.md)**
-
-### Available Frameworks
-- `html`: Single HTML file with inline TailwindCSS (default)
-- `react`: React component with ESM imports
-
-### Optional Configuration File
-Create `ccux.yaml` in your working directory:
-
+### Project Configuration (`ccux.yaml`)
+Optional configuration file for project defaults:
 ```yaml
-framework: html    # html or react
-theme: minimal     # minimal|brutalist|playful|corporate|morphism|animated|terminal|aesthetic|dark|vibrant|sustainable|data|illustrated
+framework: html              # html or react
+theme: minimal              # Any available theme
 sections: [hero, features, pricing, footer]
-claude_cmd: claude
+claude_cmd: claude          # Claude CLI command
 output_dir: output/landing-page
 ```
 
-## Usage Notes
-
-### Token and Size Limits
-- **Automatic Summarization**: Product descriptions >100 words are automatically summarized to 100-150 words to optimize Claude token usage
-- **Screenshot Optimization**: Uses JPEG compression for captured screenshots to reduce prompt size
-- **Reference Limit**: Maximum 3 reference URLs to prevent prompt bloat
-- **Timeout Protection**: 5-minute timeout per Claude invocation
-
-### Performance Optimization
-- **Concurrent Processing**: Multiple Claude invocations run in parallel where possible
-- **Memory Management**: Cleanup between screenshot captures for large reference sets
-- **Resource Blocking**: Playwright blocks ads, trackers, and unnecessary resources for faster page loads
-
-### Error Handling
-- **Graceful Fallbacks**: Continues without screenshots if reference capture fails
-- **Keyboard Interrupts**: Proper cleanup on Ctrl+C with subprocess termination
-- **User-Friendly Messages**: Clear error messages with suggested solutions
-
-## Architecture
-
-### Core Components
-
-1. **CLI Interface** (`src/ccux/cli.py`)
-   - Typer-based command structure with rich terminal formatting
-   - Interactive mode for guided user experience
-   - Configuration loading and validation
-   - Robust subprocess handling with real-time streaming
-
-2. **Web Scraping** (`src/ccux/scrape.py` & `src/ccux/scrape_simple.py`)
-   - Playwright automation for screenshot capture
-   - Cookie consent and modal handling
-   - Multiple reference site capture with error recovery
-   - Resource optimization and timeout handling
-
-3. **Prompt Templates** (`src/ccux/prompt_templates.py`)
-   - 12-phase design thinking methodology
-   - Structured prompts for consistent outputs
-   - UI/UX best practices integration
-   - Section-specific regeneration prompts
-
-### Output Structure
-- **HTML mode**: Single `index.html` file with inline TailwindCSS
-- **React mode**: `App.jsx` component + `index.html` shell with ESM imports
-- **Design Analysis**: `design_analysis.json` with complete research data
-- **Screenshots**: Reference images saved as `.jpg` files
-- **Section Markers**: HTML comments for precise section identification and regeneration
-
-### Dependencies
-- **Typer** (≥0.12.0): CLI framework with rich terminal features
-- **Rich** (≥13.7.0): Terminal formatting, progress bars, and user interaction
-- **Playwright** (≥1.45.0): Web scraping and screenshot capture with Chromium
-- **PyYAML** (≥6.0.1): Configuration file parsing
+### Environment Variables
+- `CCUX_CLAUDE_CMD`: Override default Claude CLI command
+- `CCUX_DEFAULT_THEME`: Set default theme for projects
+- `CCUX_OUTPUT_DIR`: Default output directory
 
 ## Development Notes
 
-### Code Style
-- Emoji characters used in terminal output for visual feedback
-- Rich formatting system for progress indicators and status messages
-- Proper error handling with user-friendly messages
-- Thread-safe I/O operations for concurrent processing
-- **Generated Pages**: Use SVG icons or icon libraries instead of emoji characters for professional appearance and accessibility
+### Code Architecture
+- **Separation of Concerns**: CLI commands, interactive interface, and core logic are separated
+- **Internal Functions**: Core functionality available as internal functions for both CLI and interactive use
+- **Theme System**: Comprehensive theme specifications with design philosophy and implementation rules
+- **Error Handling**: Robust error handling with graceful degradation
+- **Cross-Platform**: Works on Windows, macOS, and Linux
+
+### Dependencies
+- **Typer** (≥0.12.0): CLI framework with rich terminal features
+- **Rich** (≥13.7.0): Terminal formatting, progress bars, and UI components
+- **Playwright** (≥1.45.0): Web scraping and screenshot automation
+- **PyYAML** (≥6.0.1): Configuration file parsing
 
 ### File Structure
 ```
 src/ccux/
-├── __init__.py          # Package initialization
-├── __main__.py          # Entry point for python -m ccux
-├── cli.py              # Main CLI interface with Typer commands
-├── prompt_templates.py  # 12-phase design thinking prompts
-├── scrape.py           # Advanced Playwright web scraping
-└── scrape_simple.py    # Simplified screenshot capture
+├── __init__.py              # Package initialization
+├── __main__.py              # Entry point for python -m ccux
+├── cli.py                   # Main CLI interface with Typer commands
+├── cli_old.py               # Extended CLI commands (gen, regen, etc.)
+├── interactive.py           # Interactive application interface
+├── prompt_templates.py      # 12-phase design methodology prompts
+├── theme_specifications.py  # Theme system with 13 professional themes
+├── scrape.py               # Advanced Playwright web scraping
+└── scrape_simple.py        # Simplified screenshot capture
 ```
 
-### What This Project Does
+## Important Notes
 
-1. **Automated Competitive Research**: Discovers 3 competitor websites and design showcases
-2. **Professional Design Process**: Implements a 12-phase UX methodology including product understanding, user research, wireframing, and visual design
-3. **Screenshot Analysis**: Uses Playwright to capture and analyze competitor landing pages for design patterns
-4. **Strategic Copy Generation**: Creates conversion-optimized copy based on user research and competitive analysis  
-5. **Code Generation**: Outputs production-ready HTML or React components with TailwindCSS styling
-6. **Real-time Streaming**: Shows Claude's design thinking process in real-time with progress indicators
-7. **Section Regeneration**: Allows regenerating specific sections of existing landing pages
-8. **Smart Text Summarization**: Automatically summarizes product descriptions longer than 100 words to 100-150 words while preserving key details
-
-### Key Features
-
-- **Automated Reference Discovery**: Finds competitors and design inspiration automatically using Claude AI
-- **Multi-site Competitive Analysis**: Captures and analyzes 3 reference sites with screenshot comparison
-- **Professional Design Process**: 12-phase methodology including empathy mapping, user journeys, and conversion optimization
-- **Conversion-Optimized Copy**: Strategic messaging based on competitive analysis and user research
-- **Multiple Output Formats**: Generates HTML with inline TailwindCSS or React components with ESM imports
-- **Real-time Progress**: Streams Claude output live with rich terminal formatting and progress indicators
-- **Section Regeneration**: Regenerate specific sections (hero, features, pricing, etc.) of existing landing pages
-- **Interactive Mode**: Guided setup for users without command-line arguments
-- **Robust Error Handling**: Timeout protection, graceful fallbacks, and comprehensive error reporting
-- **Cross-platform Support**: Works on Windows, macOS, and Linux
-- **Memory Efficient**: Cleanup between captures for large reference sets
-- **Smart Text Processing**: Automatically summarizes lengthy product descriptions (>100 words) to optimize processing while preserving essential details
-
-### Implementation Details
-
-The tool implements a sophisticated workflow:
-
-1. **Reference Discovery Phase**: Uses Claude AI to find 3 competitor websites
-2. **Screenshot Capture**: Playwright automation captures competitor landing pages with error handling  
-3. **Design Thinking Process**: 12-phase methodology including:
-   - Deep product understanding and value proposition analysis
-   - Competitive UX analysis of captured screenshots
-   - User empathy mapping and persona development
-   - Site flow and journey mapping
-   - Content strategy development
-   - Mobile-first wireframing validation
-   - Visual identity and design system creation
-   - High-fidelity design with interactive elements
-   - Final copy refinement and polish
-   - Strategic implementation with conversion optimization
-
-4. **Section Management**: Advanced section handling including:
-   - HTML comment markers for section identification
-   - Individual section regeneration without affecting other parts
-   - Context preservation during section updates
-   - Design analysis tracking for regeneration history
-
-5. **Code Generation**: Produces production-ready HTML or React components with:
-   - Semantic HTML structure with section markers
-   - TailwindCSS styling with custom design system
-   - SEO optimization with meta tags and schema markup
-   - Responsive design patterns
-   - Accessibility compliance (WCAG guidelines)
-   - Performance optimizations
-   - SVG icons or icon libraries (Heroicons, Lucide, Feather) instead of emoji characters for professional appearance and cross-platform compatibility
-
+- **Production Ready**: All generated code is production-ready with proper SEO, accessibility, and performance optimization
+- **No Manual Editing Required**: Generated HTML/React can be deployed immediately
+- **Extensible**: Theme system and prompt templates can be extended for custom requirements  
+- **Professional Quality**: Uses methodology from professional UX agencies and design systems
+- **Developer Friendly**: Clean, semantic code that developers can easily modify and extend

@@ -122,7 +122,21 @@ def reference_discovery_prompt(desc: str) -> str:
 
 
 def deep_product_understanding_prompt(desc: str) -> str:
-    return f'JSON analysis of product: {desc}\n{{"problem":"Core issue","user":"Who needs it","differentiator":"Why not existing","best_feature":"Most loved","risks":"Possible failure reasons"}}\nRules: Be concise, no fluff, focus on user pain.'
+    return f'''Analyze this product for deep understanding: {desc}
+
+Context: Perform a strategic analysis to understand the core problem this product solves, who needs it, what makes it different, its strongest feature, and potential risks.
+
+Rules: Be concise, no fluff, focus on user pain and real market positioning.
+
+IMPORTANT: You must respond with valid JSON only. No explanations, no markdown, no code blocks - just the raw JSON object.
+
+{{
+  "problem": "Core issue or pain point this product solves",
+  "user": "Primary target user or customer segment who needs this",
+  "differentiator": "Key factor that sets this apart from existing solutions", 
+  "best_feature": "Most compelling or loved feature/capability",
+  "risks": "Main reasons this product might fail or struggle"
+}}'''
 
 
 def ux_analysis_prompt(product_desc: str, refs: List[str]) -> str:
@@ -178,7 +192,8 @@ UX Insights:
 - Adopt: {adopt}
 - Avoid: {avoid}
 
-Output JSON only:
+IMPORTANT: You must respond with valid JSON only. No explanations, no markdown, no code blocks - just the raw JSON object.
+
 {{
   "context": {{
     "device": "...",
@@ -211,7 +226,8 @@ Output JSON only:
   }},
   "research_gaps": ["...", "..."]
 }}
-Rules: Be concise, quote user questions, focus on behaviors.'''
+
+Rules: Be concise, quote user questions, focus on behaviors. Output only the JSON structure above with no additional text.'''
 
 
 def define_prompt(product_desc, user_research) -> str:
@@ -910,6 +926,31 @@ Include all preserved functionality and styling.
 Do NOT add explanations or describe your changes.
 Your response should be the updated HTML code only.'''
 
+
+def editgen_sections_prompt(product_desc, framework, theme, edit_instruction, affected_sections, sections_html) -> str:
+    """Lightweight section-only editing - much faster than full page regeneration"""
+    
+    return f'''Edit these sections based on the instruction. PRESERVE all theme styling.
+
+Product: {product_desc}
+Theme: {theme} (MUST preserve all theme CSS classes and styling)
+Edit Request: {edit_instruction}
+Sections: {", ".join(affected_sections)}
+
+CURRENT SECTIONS:
+{sections_html}
+
+CRITICAL RULES:
+1. PRESERVE ALL theme styling - do NOT change CSS classes, colors, fonts
+2. PRESERVE section markers (<!-- START/END -->)  
+3. PRESERVE functionality (IDs, navigation, forms, animations)
+4. ONLY change text content, copy, messaging as requested
+5. Keep exact same layout structure and visual hierarchy
+
+Output ONLY the edited sections with their markers:
+<!-- START: section_name -->
+... section with only text/content changes ...
+<!-- END: section_name -->'''
 
 
 def form_on_prompt(product_desc: str, existing_html: str, detected_theme: str) -> str:

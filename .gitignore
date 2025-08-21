@@ -5,5 +5,5 @@ dist/
 build/
 *.pyc
 playwright-report/
-output/
+output*/
 prompt.txt
