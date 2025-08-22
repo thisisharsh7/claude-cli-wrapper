@@ -8,7 +8,18 @@ CCUX (Claude Code UI Generator) is a sophisticated Python CLI tool that automati
 
 ### Architecture
 - **Interactive Interface** (`src/ccux/interactive.py`): Rich terminal application with project management
-- **CLI Commands** (`src/ccux/cli_old.py`): Direct command-line interface for automation
+- **Main CLI** (`src/ccux/cli.py`): User-facing CLI with help system and command delegation
+- **Implementation CLI** (`src/ccux/cli_old.py`): Core command implementations and business logic
+- **Modular Core System** (`src/ccux/core/`): Organized utility modules by function
+  - `usage_tracking.py`: Cost calculation and token analytics
+  - `signal_handling.py`: Graceful interrupt handling
+  - `configuration.py`: YAML config management
+  - `project_management.py`: Project discovery and selection
+  - `claude_integration.py`: Claude API integration with progress
+  - `content_processing.py`: HTML validation and content processing
+  - `form_handling.py`: Interactive form generation and management
+  - `section_management.py`: Section replacement with semantic ordering
+  - `animation_utilities.py`: Theme-appropriate animations
 - **Theme System** (`src/ccux/theme_specifications.py`): 13 professional design themes
 - **Prompt Templates** (`src/ccux/prompt_templates.py`): 12-phase design methodology prompts
 - **Web Scraping** (`src/ccux/scrape.py`, `src/ccux/scrape_simple.py`): Competitor analysis automation
@@ -361,11 +372,14 @@ output_dir: output/landing-page
 ## Development Notes
 
 ### Code Architecture
-- **Separation of Concerns**: CLI commands, interactive interface, and core logic are separated
-- **Internal Functions**: Core functionality available as internal functions for both CLI and interactive use
+- **Modular Design**: Clean separation of concerns with organized core modules
+- **Command Delegation**: User-facing CLI delegates to implementation CLI for complex operations
+- **Shared Utilities**: Common functionality centralized in `src/ccux/core/` modules
+- **No Code Duplication**: Each function exists in only one place, imported where needed
 - **Theme System**: Comprehensive theme specifications with design philosophy and implementation rules
 - **Error Handling**: Robust error handling with graceful degradation
 - **Cross-Platform**: Works on Windows, macOS, and Linux
+- **Easy Maintenance**: Modular structure makes finding and modifying code much easier
 
 ### Dependencies
 - **Typer** (≥0.12.0): CLI framework with rich terminal features
@@ -378,14 +392,52 @@ output_dir: output/landing-page
 src/ccux/
 ├── __init__.py              # Package initialization
 ├── __main__.py              # Entry point for python -m ccux
-├── cli.py                   # Main CLI interface with Typer commands
-├── cli_old.py               # Extended CLI commands (gen, regen, etc.)
+├── cli.py                   # User-facing CLI with help system (356 lines)
+├── cli_old.py               # Implementation CLI with core commands (485 lines)
 ├── interactive.py           # Interactive application interface
+├── core/                    # Modular utility system
+│   ├── __init__.py
+│   ├── README.md            # Core modules documentation
+│   ├── usage_tracking.py    # Cost calculation and analytics
+│   ├── signal_handling.py   # Graceful interrupt handling
+│   ├── configuration.py     # YAML config management
+│   ├── project_management.py # Project discovery and selection
+│   ├── claude_integration.py # Claude API integration
+│   ├── content_processing.py # HTML validation and processing
+│   ├── form_handling.py     # Form generation and management
+│   ├── section_management.py # Section replacement logic
+│   └── animation_utilities.py # Theme-appropriate animations
 ├── prompt_templates.py      # 12-phase design methodology prompts
 ├── theme_specifications.py  # Theme system with 13 professional themes
 ├── scrape.py               # Advanced Playwright web scraping
 └── scrape_simple.py        # Simplified screenshot capture
 ```
+
+## Modular Architecture Benefits
+
+The recent reorganization provides significant improvements:
+
+### 🧹 **Code Deduplication**
+- **Before**: 3,925 total lines with extensive duplication
+- **After**: 841 lines in CLI files (78% reduction!) + organized core modules
+- Each utility function exists in only one place
+
+### 📖 **Improved Readability**
+- `cli.py`: Clean user interface with comprehensive help system
+- `cli_old.py`: Focused implementation with core business logic
+- `core/` modules: Logical organization by function and responsibility
+
+### 🔧 **Better Maintainability**
+- Changes only need to be made in one location
+- Easy to find and modify specific functionality
+- Clear separation between CLI interface and implementation
+- Modular testing becomes straightforward
+
+### 🏗️ **Enhanced Development**
+- New features can be added to appropriate modules
+- Import system makes dependencies clear and manageable
+- Core utilities shared between CLI and interactive modes
+- Better code reuse across the entire application
 
 ## Important Notes
 

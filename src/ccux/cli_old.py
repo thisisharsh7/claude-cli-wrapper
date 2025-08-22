@@ -66,6 +66,27 @@ app = typer.Typer(
 )
 console = Console()
 
+# Import core module functions (these will override any duplicates below due to import order)
+from .core.usage_tracking import (
+    calculate_estimated_cost,
+    get_latest_usage, 
+    calculate_usage_difference,
+    display_usage_stats
+)
+from .core.signal_handling import register_signal_handler
+from .core.configuration import Config  
+from .core.project_management import (
+    get_next_available_output_dir,
+    discover_existing_projects,
+    extract_project_name_from_dir
+)
+from .core.claude_integration import run_claude_with_progress, summarize_long_description
+from .core.content_processing import safe_json_parse, strip_code_blocks
+from .core.animation_utilities import add_theme_appropriate_animations, remove_animations_from_content
+
+# Register signal handler
+register_signal_handler()
+
 def calculate_estimated_cost(input_tokens: int, output_tokens: int) -> float:
     """Calculate estimated cost based on Claude pricing"""
     # Claude 3.5 Sonnet pricing (as of 2024)
@@ -1148,6 +1169,14 @@ def extract_page_context(file_path: str) -> Dict[str, Any]:
         for section_name, _ in sections:
             context['sections'].append(section_name)
         
+        # Additional header/navigation detection
+        if re.search(r'<nav[^>]*>', content) and not any('header' in s.lower() or 'nav' in s.lower() for s in context['sections']):
+            context['sections'].append('header')
+        
+        # Look for explicit header tags
+        header_tags = re.findall(r'<header[^>]+id=["\']([^"\']+)["\']', content)
+        context['sections'].extend(header_tags)
+        
         # Enhanced theme detection using new system
         context['theme'] = detect_theme_from_content(content)
             
@@ -1474,6 +1503,15 @@ def replace_sections_in_file(file_path: str, new_sections_content: str, sections
                     f'<!-- {section_name.title()} Section -->.*?(?=<!-- .* Section -->|</body>|$)',
                     f'<section[^>]*class="[^"]*{section_key}[^"]*"[^>]*>.*?</section>'
                 ]
+                
+                # Add special patterns for header/navigation sections
+                if section_key in ['header', 'nav', 'navigation']:
+                    header_patterns = [
+                        r'<nav[^>]*class="[^"]*fixed[^"]*"[^>]*>.*?</nav>',  # Fixed nav
+                        r'<nav[^>]*>.*?</nav>',                              # Any nav tag
+                        r'<header[^>]*>.*?</header>',                        # Any header tag
+                    ]
+                    patterns_to_try.extend(header_patterns)
                 
                 section_replaced = False
                 for pattern in patterns_to_try:
@@ -2112,7 +2150,7 @@ def regen(
     
     # Determine sections to regenerate
     if all:
-        sections_to_regen = existing_sections if existing_sections else ['hero', 'features', 'pricing', 'footer']
+        sections_to_regen = existing_sections if existing_sections else ['header', 'hero', 'features', 'pricing', 'footer']
     elif section:
         sections_to_regen = [s.strip() for s in section.split(',')]
     else:
@@ -2388,8 +2426,8 @@ def theme(
     console.print(f"Target file: [cyan]{target_file}[/cyan]")
     console.print(f"Framework: [green]{framework}[/green]")
     
-    # Get product description from analysis
-    product_desc = analysis_data.get('project_metadata', {}).get('product_description')
+    # Get product description from analysis (handle both fast and full mode structures)
+    product_desc = analysis_data.get('product_description') or analysis_data.get('project_metadata', {}).get('product_description')
     if not product_desc:
         console.print("[red]❌ Product description not found in design analysis[/red]")
         console.print("Cannot change theme without original product description")

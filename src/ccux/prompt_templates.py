@@ -660,6 +660,34 @@ def regeneration_prompt(product_desc, framework, theme, section_list, existing_c
     
     sections_to_generate = "\n".join([f"- {section}" for section in section_list])
     
+    # Add section-specific guidance
+    section_guidance = ""
+    if any(section.lower() in ['header', 'nav', 'navigation'] for section in section_list):
+        section_guidance += """
+HEADER/NAVIGATION SPECIFIC REQUIREMENTS:
+- MUST include proper section markers: <!-- START: header --> and <!-- END: header -->
+- MUST maintain all navigation links to existing sections (#hero, #features, #pricing, etc.)
+- MUST preserve mobile hamburger menu functionality with onclick="toggleMobileMenu()"
+- MUST keep fixed navigation: position fixed, top-0, z-50 classes
+- MUST include backdrop-blur or similar styling for scroll effects
+- MUST maintain brand logo and company name consistency
+- Navigation links should match existing section structure
+"""
+    
+    if any(section.lower() == 'footer' for section in section_list):
+        section_guidance += """
+FOOTER SPECIFIC REQUIREMENTS:
+- MUST include proper section markers: <!-- START: footer --> and <!-- END: footer -->
+- MUST include comprehensive company information and contact details
+- MUST maintain multi-column responsive grid layout (4 columns on desktop, stacked on mobile)
+- MUST include social media links with proper icons and hover effects
+- MUST preserve business hours, location, and contact information
+- MUST include quick navigation links to main page sections
+- MUST maintain copyright notice and legal links (Privacy Policy, Terms, etc.)
+- MUST preserve dark theme styling (typically bg-gray-900 with light text)
+- Footer should be comprehensive and informative, containing all essential business info
+"""
+    
     # Get theme-specific design rules
     theme_rules = ""
     if theme == "brutalist":
@@ -739,6 +767,8 @@ Theme: {theme}
 
 Existing Context:
 {context_analysis or "No specific context provided"}
+
+{section_guidance}
 
 {theme_rules}
 

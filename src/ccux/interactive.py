@@ -18,8 +18,8 @@ from rich.columns import Columns
 from rich.align import Align
 from rich.prompt import Prompt, Confirm, IntPrompt
 
-# Import utilities
-from .cli import safe_json_parse
+# Import utilities from core modules
+from .core.content_processing import safe_json_parse
 
 console = Console()
 
@@ -1116,11 +1116,19 @@ class CCUXApp:
             sections.extend(section_tags)
             
             # Method 3: Look for <div id="section_name"> with common section names
-            common_sections = ['hero', 'features', 'pricing', 'testimonials', 'stats', 'about', 'contact', 'footer', 'cards', 'team', 'faq', 'cta']
+            common_sections = ['header', 'nav', 'navigation', 'hero', 'features', 'pricing', 'testimonials', 'stats', 'about', 'contact', 'footer', 'cards', 'team', 'faq', 'cta']
             div_sections = re.findall(r'<div[^>]+id=["\']([^"\']+)["\']', content)
             for div_id in div_sections:
                 if any(section_name in div_id.lower() for section_name in common_sections):
                     sections.append(div_id)
+            
+            # Method 4: Look for navigation/header elements without section markers
+            if re.search(r'<nav[^>]*>', content) and not any('header' in s.lower() or 'nav' in s.lower() for s in sections):
+                sections.append('header')
+            
+            # Method 5: Look for explicit header tags
+            header_tags = re.findall(r'<header[^>]+id=["\']([^"\']+)["\']', content)
+            sections.extend(header_tags)
             
             # Remove duplicates and sort
             sections = list(set(sections))
@@ -1140,7 +1148,8 @@ class CCUXApp:
                 import json
                 with open(analysis_file, 'r') as f:
                     analysis = json.load(f)
-                    theme = analysis.get('project_metadata', {}).get('theme', 'minimal')
+                    # Handle both fast mode (theme at root) and full mode (theme in project_metadata)
+                    theme = analysis.get('theme') or analysis.get('project_metadata', {}).get('theme', 'minimal')
                     return theme
             
             # Fallback: try to detect from HTML content (basic detection)
@@ -1449,7 +1458,7 @@ class CCUXApp:
                 console.print("• 🎨 13 professional themes")
                 console.print("• 📱 Mobile-first responsive design")
                 console.print("• ♿ WCAG accessibility compliance")
-                console.print("\nFor more info, visit: https://github.com/your-repo/ccux")
+                console.print("\nFor more info, visit: https://github.com/thisisharsh7/claude-cli-wrapper")
                 Prompt.ask("Press Enter to continue", default="")
                 
             elif action == 'exit':

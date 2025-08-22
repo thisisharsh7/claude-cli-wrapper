@@ -68,324 +68,28 @@ app = typer.Typer(
 )
 console = Console()
 
-def get_latest_usage() -> Dict[str, Any]:
-    """Get the latest usage data from ccusage"""
-    try:
-        result = subprocess.run(['ccusage', '--json', '--order', 'desc'], 
-                              capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            data = json.loads(result.stdout)
-            if data.get('daily') and len(data['daily']) > 0:
-                return data['daily'][0]  # Most recent day
-    except Exception:
-        pass
-    return {}
+# Import usage tracking functions from core module
+from .core.usage_tracking import get_latest_usage, calculate_usage_difference
 
-def calculate_usage_difference(pre_usage: Dict[str, Any], post_usage: Dict[str, Any]) -> Dict[str, Any]:
-    """Calculate the difference in usage between two ccusage snapshots"""
-    if not pre_usage or not post_usage:
-        return {}
-    
-    # Calculate differences
-    input_diff = post_usage.get('inputTokens', 0) - pre_usage.get('inputTokens', 0)
-    output_diff = post_usage.get('outputTokens', 0) - pre_usage.get('outputTokens', 0)
-    cost_diff = post_usage.get('totalCost', 0) - pre_usage.get('totalCost', 0)
-    
-    # Return usage stats in expected format
-    return {
-        'input_tokens': max(0, input_diff),
-        'output_tokens': max(0, output_diff),
-        'cost': max(0.0, cost_diff)
-    }
-
-# Global variables for signal handling
-current_subprocess = None
-current_progress = None
-
-def signal_handler(signum, frame):
-    """Handle keyboard interrupts gracefully"""
-    global current_subprocess, current_progress
-    
-    console.print("\n[yellow]⚠️  Interrupt received, cleaning up...[/yellow]")
-    
-    if current_subprocess:
-        try:
-            current_subprocess.terminate()
-            current_subprocess.wait(timeout=5)
-        except:
-            try:
-                current_subprocess.kill()
-            except:
-                pass
-    
-    if current_progress:
-        current_progress.stop()
-    
-    console.print("[red]❌ Operation cancelled by user[/red]")
-    sys.exit(1)
+# Import signal handling from core module
+from .core.signal_handling import register_signal_handler
 
 # Register signal handler
-signal.signal(signal.SIGINT, signal_handler)
+register_signal_handler()
 
-class Config:
-    """Configuration management for CCUX"""
-    
-    def __init__(self, config_path: str = "ccux.yaml"):
-        self.config_path = config_path
-        self.defaults = {
-            'framework': 'html',
-            'theme': 'minimal',
-            'sections': ['hero', 'features', 'pricing', 'footer'],
-            'claude_cmd': 'claude',
-            'output_dir': 'output/landing-page'
-        }
-        self.config = self._load_config()
-    
-    def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from file or use defaults"""
-        if os.path.exists(self.config_path):
-            try:
-                with open(self.config_path, 'r') as f:
-                    config = yaml.safe_load(f) or {}
-                # Merge with defaults
-                return {**self.defaults, **config}
-            except Exception as e:
-                console.print(f"[yellow]⚠️  Error loading config: {e}. Using defaults.[/yellow]")
-        
-        return self.defaults.copy()
-    
-    def get(self, key: str, default=None):
-        return self.config.get(key, default)
+# Import configuration management from core module
+from .core.configuration import Config
 
-def get_next_available_output_dir() -> str:
-    """Find the next available output directory"""
-    # Check base 'output' directory first
-    if not os.path.exists("output"):
-        return "output"
-    
-    # If output exists, check output1, output2, etc.
-    for i in range(1, 100):  # Support up to 99 projects
-        output_dir = f"output{i}"
-        if not os.path.exists(output_dir):
-            return output_dir
-    
-    # Fallback if somehow we have 100+ projects
-    import time
-    return f"output-{int(time.time())}"
+# Import project management functions from core module
+from .core.project_management import (
+    get_next_available_output_dir,
+    discover_existing_projects, 
+    extract_project_name_from_dir
+)
 
-def discover_existing_projects() -> List[Dict[str, str]]:
-    """Discover all existing CCUX projects in current directory
-    Only includes projects with both index.html and design_analysis.json
-    """
-    projects = []
-    
-    # Check for output directory
-    if (os.path.exists("output") and 
-        os.path.exists(os.path.join("output", "index.html")) and
-        os.path.exists(os.path.join("output", "design_analysis.json"))):
-        project_name = extract_project_name_from_dir("output")
-        projects.append({
-            "directory": "output",
-            "name": project_name,
-            "path": os.path.join("output", "index.html")
-        })
-    
-    # Check for output1, output2, etc.
-    for i in range(1, 100):
-        output_dir = f"output{i}"
-        if (os.path.exists(output_dir) and 
-            os.path.exists(os.path.join(output_dir, "index.html")) and
-            os.path.exists(os.path.join(output_dir, "design_analysis.json"))):
-            project_name = extract_project_name_from_dir(output_dir)
-            projects.append({
-                "directory": output_dir,
-                "name": project_name,
-                "path": os.path.join(output_dir, "index.html")
-            })
-    
-    return projects
-
-def extract_project_name_from_dir(output_dir: str) -> str:
-    """Extract project name from design analysis or HTML content"""
-    try:
-        # Try to get from design_analysis.json first
-        analysis_file = os.path.join(output_dir, "design_analysis.json")
-        if os.path.exists(analysis_file):
-            with open(analysis_file, 'r') as f:
-                analysis = json.load(f)
-                # Look for brand name or product description
-                if 'brand_name' in analysis:
-                    return analysis['brand_name'][:30]
-                if 'product_description' in analysis:
-                    return analysis['product_description'][:30] + "..."
-        
-        # Fallback: extract from HTML title or first heading
-        html_file = os.path.join(output_dir, "index.html")
-        if os.path.exists(html_file):
-            with open(html_file, 'r') as f:
-                content = f.read()
-                # Try to extract title
-                title_match = re.search(r'<title>(.*?)</title>', content, re.IGNORECASE)
-                if title_match:
-                    return title_match.group(1)[:30]
-                # Try to extract first h1
-                h1_match = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.IGNORECASE | re.DOTALL)
-                if h1_match:
-                    # Remove HTML tags
-                    clean_text = re.sub(r'<[^>]+>', '', h1_match.group(1))
-                    return clean_text[:30].strip()
-    except:
-        pass
-    
-    return f"Project in {output_dir}"
-
-# Import Claude runner and other utilities from the original cli.py
-def run_claude_with_progress(prompt: str, description: str = "Claude Code is thinking...") -> tuple[str, Dict[str, Any]]:
-    """Run Claude CLI with real-time progress indication and usage tracking via ccusage"""
-    global current_subprocess, current_progress
-    
-    config = Config()
-    claude_cmd = config.get('claude_cmd', 'claude')
-    
-    # Get usage before Claude call for comparison
-    pre_usage = get_latest_usage()
-    
-    # Prepare Claude command
-    cmd = [claude_cmd, '--print', prompt]
-    
-    output_lines = []
-    stderr_lines = []
-    
-    def read_stream(stream, lines_list):
-        """Read from stream and collect output"""
-        try:
-            for line in iter(stream.readline, ''):
-                if line:
-                    lines_list.append(line.strip())
-        except:
-            pass
-    
-    with Progress(
-        SpinnerColumn(),
-        TextColumn(f"[bold blue]{description}"),
-        TimeElapsedColumn(),
-        console=console,
-        transient=False
-    ) as progress:
-        current_progress = progress
-        task = progress.add_task("Processing", total=None)
-        
-        try:
-            # Start Claude process
-            current_subprocess = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1,
-                universal_newlines=True
-            )
-            
-            # Start threads to read stdout and stderr
-            stdout_thread = threading.Thread(
-                target=read_stream, 
-                args=(current_subprocess.stdout, output_lines)
-            )
-            stderr_thread = threading.Thread(
-                target=read_stream, 
-                args=(current_subprocess.stderr, stderr_lines)
-            )
-            
-            stdout_thread.start()
-            stderr_thread.start()
-            
-            # Wait for process with timeout (5 minutes)
-            try:
-                current_subprocess.wait(timeout=300)
-            except subprocess.TimeoutExpired:
-                current_subprocess.kill()
-                raise Exception("Claude Code timed out after 5 minutes")
-            
-            # Wait for threads to finish
-            stdout_thread.join(timeout=2)
-            stderr_thread.join(timeout=2)
-            
-            if current_subprocess.returncode != 0:
-                error_msg = '\n'.join(stderr_lines) if stderr_lines else "Claude Code execution failed"
-                raise Exception(f"Claude Code failed: {error_msg}")
-            
-            # Clean up
-            current_subprocess = None
-            current_progress = None
-            
-            output_text = '\n'.join(output_lines)
-            
-            # Get usage after Claude call and calculate difference
-            post_usage = get_latest_usage()
-            usage_stats = calculate_usage_difference(pre_usage, post_usage)
-            
-            return output_text, usage_stats
-            
-        except Exception as e:
-            current_subprocess = None
-            current_progress = None
-            raise e
-
-def summarize_long_description(desc: str) -> str:
-    """Summarize long product descriptions to optimize token usage"""
-    if len(desc.split()) <= 100:
-        return desc
-    
-    console.print(f"[yellow]📝 Description is {len(desc.split())} words, summarizing to optimize Claude token usage...[/yellow]")
-    
-    summary_prompt = f"""Please summarize this product description in 100-150 words while preserving all key details, features, and benefits:
-
-{desc}
-
-Return only the summary, no additional text."""
-    
-    try:
-        summary, _ = run_claude_with_progress(summary_prompt, "Summarizing product description...")
-        return summary.strip()
-    except Exception as e:
-        console.print(f"[yellow]⚠️  Summarization failed: {e}. Using original description.[/yellow]")
-        return desc
-
-def safe_json_parse(text: str) -> Dict[str, Any]:
-    """Safely parse JSON from Claude output with fallback"""
-    try:
-        # Try direct JSON parse first
-        return json.loads(text.strip())
-    except:
-        # Try to extract JSON from code blocks
-        import re
-        json_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
-        if json_match:
-            try:
-                return json.loads(json_match.group(1).strip())
-            except:
-                pass
-        
-        # Try to find JSON-like content
-        json_pattern = r'\{.*\}'
-        json_match = re.search(json_pattern, text, re.DOTALL)
-        if json_match:
-            try:
-                return json.loads(json_match.group(0))
-            except:
-                pass
-        
-        # Fallback to empty dict
-        console.print(f"[yellow]⚠️  Could not parse JSON from Claude output[/yellow]")
-        return {}
-
-def strip_code_blocks(text: str) -> str:
-    """Remove code block markers from Claude output"""
-    # Remove ```html and ``` markers
-    text = re.sub(r'^```html\s*\n?', '', text, flags=re.MULTILINE)
-    text = re.sub(r'^```\s*$', '', text, flags=re.MULTILINE)
-    text = re.sub(r'```$', '', text)
-    return text.strip()
+# Import Claude integration and content processing from core modules
+from .core.claude_integration import run_claude_with_progress, summarize_long_description
+from .core.content_processing import safe_json_parse, strip_code_blocks
 
 @app.command()
 def init():
@@ -480,18 +184,6 @@ def regen(
     from . import cli_old
     cli_old.regen(section, all, desc, file, output_dir)
 
-@app.command()
-def init():
-    """Launch CCUX Interactive Application (Main Entry Point)"""
-    try:
-        from .interactive import run_interactive_app
-        run_interactive_app()
-    except ImportError as e:
-        console.print(f"[red]❌ Error importing interactive module: {e}[/red]")
-        raise typer.Exit(1)
-    except KeyboardInterrupt:
-        console.print("[yellow]👋 Goodbye![/yellow]")
-        raise typer.Exit(0)
 
 # Default command when no arguments provided
 @app.callback(invoke_without_command=True)
