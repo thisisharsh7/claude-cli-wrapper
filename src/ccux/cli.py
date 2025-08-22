@@ -68,6 +68,36 @@ app = typer.Typer(
 )
 console = Console()
 
+def get_latest_usage() -> Dict[str, Any]:
+    """Get the latest usage data from ccusage"""
+    try:
+        result = subprocess.run(['ccusage', '--json', '--order', 'desc'], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            if data.get('daily') and len(data['daily']) > 0:
+                return data['daily'][0]  # Most recent day
+    except Exception:
+        pass
+    return {}
+
+def calculate_usage_difference(pre_usage: Dict[str, Any], post_usage: Dict[str, Any]) -> Dict[str, Any]:
+    """Calculate the difference in usage between two ccusage snapshots"""
+    if not pre_usage or not post_usage:
+        return {}
+    
+    # Calculate differences
+    input_diff = post_usage.get('inputTokens', 0) - pre_usage.get('inputTokens', 0)
+    output_diff = post_usage.get('outputTokens', 0) - pre_usage.get('outputTokens', 0)
+    cost_diff = post_usage.get('totalCost', 0) - pre_usage.get('totalCost', 0)
+    
+    # Return usage stats in expected format
+    return {
+        'input_tokens': max(0, input_diff),
+        'output_tokens': max(0, output_diff),
+        'cost': max(0.0, cost_diff)
+    }
+
 # Global variables for signal handling
 current_subprocess = None
 current_progress = None
@@ -211,18 +241,20 @@ def extract_project_name_from_dir(output_dir: str) -> str:
 
 # Import Claude runner and other utilities from the original cli.py
 def run_claude_with_progress(prompt: str, description: str = "Claude Code is thinking...") -> tuple[str, Dict[str, Any]]:
-    """Run Claude CLI with real-time progress indication and usage tracking"""
+    """Run Claude CLI with real-time progress indication and usage tracking via ccusage"""
     global current_subprocess, current_progress
     
     config = Config()
     claude_cmd = config.get('claude_cmd', 'claude')
+    
+    # Get usage before Claude call for comparison
+    pre_usage = get_latest_usage()
     
     # Prepare Claude command
     cmd = [claude_cmd, '--print', prompt]
     
     output_lines = []
     stderr_lines = []
-    usage_stats = {}
     
     def read_stream(stream, lines_list):
         """Read from stream and collect output"""
@@ -282,33 +314,16 @@ def run_claude_with_progress(prompt: str, description: str = "Claude Code is thi
                 error_msg = '\n'.join(stderr_lines) if stderr_lines else "Claude Code execution failed"
                 raise Exception(f"Claude Code failed: {error_msg}")
             
-            # Parse usage statistics from stderr
-            for line in stderr_lines:
-                if 'Input tokens:' in line:
-                    try:
-                        tokens = int(re.search(r'(\d+)', line).group(1))
-                        usage_stats['input_tokens'] = tokens
-                    except:
-                        pass
-                elif 'Output tokens:' in line:
-                    try:
-                        tokens = int(re.search(r'(\d+)', line).group(1))
-                        usage_stats['output_tokens'] = tokens
-                    except:
-                        pass
-                elif 'Cost:' in line:
-                    try:
-                        cost_match = re.search(r'\$([0-9.]+)', line)
-                        if cost_match:
-                            usage_stats['cost'] = float(cost_match.group(1))
-                    except:
-                        pass
-            
             # Clean up
             current_subprocess = None
             current_progress = None
             
             output_text = '\n'.join(output_lines)
+            
+            # Get usage after Claude call and calculate difference
+            post_usage = get_latest_usage()
+            usage_stats = calculate_usage_difference(pre_usage, post_usage)
+            
             return output_text, usage_stats
             
         except Exception as e:

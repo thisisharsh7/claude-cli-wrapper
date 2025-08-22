@@ -23,6 +23,7 @@ The main interface launched with `ccux init`:
 - **Theme Switching**: Interactive theme selection with preview
 - **Form Management**: Add, remove, customize contact forms with visual feedback
 - **Smart Detection**: Auto-detects themes, sections, and project configurations
+- **ESC Key Support**: Press ESC at any point to immediately exit the application
 
 ### 🚀 AI-Powered Generation
 Implements professional UX methodology:
@@ -73,6 +74,7 @@ Launch CCUX Interactive Application (Main Entry Point)
 - Interactive theme switching with live preview
 - Form management (contact, newsletter, signup forms)
 - Built-in help system and workflows
+- **ESC Key Support**: Press ESC anywhere to immediately exit
 
 ### `ccux gen`
 Generate conversion-optimized landing page using AI design methodology
@@ -234,6 +236,39 @@ Comprehensive help system with specialized topics
 - `themes`: Complete theme guide with descriptions and use cases
 - `examples`: Common usage patterns and practical scenarios  
 - `workflows`: Step-by-step workflows for different user types
+
+### `ccux cost`
+Show cost analysis and token usage for CCUX projects
+
+**Usage:** `ccux cost [PROJECT_DIR] [OPTIONS]`
+
+**Options:**
+- `--detailed, -d`: Show detailed breakdown by operation type
+- `--summary, -s`: Show summary statistics only  
+- `PROJECT_DIR`: Analyze specific project (optional, defaults to all projects in current directory)
+
+**Features:**
+- **Token Analysis**: Input/output token usage for all operations
+- **Cost Estimation**: Calculated costs based on Claude pricing
+- **Operation Breakdown**: Costs by generation phase, edits, theme changes, form operations
+- **Multi-Project Reports**: Aggregate costs across multiple projects
+- **Historical Tracking**: Shows costs from design_analysis.json files
+- **Full & Fast Mode Support**: Tracks costs for both design thinking and quick generation modes
+
+**Examples:**
+```bash
+# Analyze all projects in current directory
+ccux cost
+
+# Analyze specific project with detailed breakdown  
+ccux cost my-landing-page --detailed
+
+# Show summary only across all projects
+ccux cost --summary
+
+# Detailed analysis of specific project
+ccux cost ./output/landing-page --detailed
+```
 
 ### `ccux projects`
 List and discover existing CCUX projects in current directory

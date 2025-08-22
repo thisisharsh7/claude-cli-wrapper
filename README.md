@@ -16,6 +16,7 @@ Launch with `ccux init` for a guided experience:
 - **Visual Management**: Manage multiple projects with rich terminal UI  
 - **Live Editing**: Edit content, regenerate sections, change themes
 - **Smart Detection**: Auto-discovers existing projects and configurations
+- **ESC Key Support**: Press ESC anywhere to immediately exit
 
 ### 🚀 **AI-Powered Generation**
 - **12-Phase Design Process**: Professional UX methodology used by agencies
@@ -42,6 +43,7 @@ Choose from carefully designed themes:
 - **Production Ready**: Clean, semantic code with SEO optimization
 - **Mobile First**: Responsive design for all screen sizes
 - **Accessibility**: WCAG compliant with proper ARIA labels
+- **Cost Tracking**: Monitor token usage and estimated costs with `ccux cost`
 
 ## Quick Start
 
@@ -77,6 +79,7 @@ ccux help themes
 | `ccux gen` | Generate landing page | `ccux gen --desc "SaaS platform"` |  
 | `ccux regen` | Regenerate sections | `ccux regen --section hero` |
 | `ccux projects` | List projects | `ccux projects` |
+| `ccux cost` | Show cost analysis | `ccux cost --detailed` |
 | `ccux help` | Get help | `ccux help themes` |
 | `ccux version` | Show version | `ccux version` |
 

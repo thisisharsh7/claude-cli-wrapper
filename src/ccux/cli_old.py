@@ -66,6 +66,45 @@ app = typer.Typer(
 )
 console = Console()
 
+def calculate_estimated_cost(input_tokens: int, output_tokens: int) -> float:
+    """Calculate estimated cost based on Claude pricing"""
+    # Claude 3.5 Sonnet pricing (as of 2024)
+    # Input: $3.00 per million tokens
+    # Output: $15.00 per million tokens
+    input_cost = (input_tokens / 1_000_000) * 3.00
+    output_cost = (output_tokens / 1_000_000) * 15.00
+    return input_cost + output_cost
+
+def get_latest_usage() -> Dict[str, Any]:
+    """Get the latest usage data from ccusage"""
+    try:
+        result = subprocess.run(['ccusage', '--json', '--order', 'desc'], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            if data.get('daily') and len(data['daily']) > 0:
+                return data['daily'][0]  # Most recent day
+    except Exception:
+        pass
+    return {}
+
+def calculate_usage_difference(pre_usage: Dict[str, Any], post_usage: Dict[str, Any]) -> Dict[str, Any]:
+    """Calculate the difference in usage between two ccusage snapshots"""
+    if not pre_usage or not post_usage:
+        return {}
+    
+    # Calculate differences
+    input_diff = post_usage.get('inputTokens', 0) - pre_usage.get('inputTokens', 0)
+    output_diff = post_usage.get('outputTokens', 0) - pre_usage.get('outputTokens', 0)
+    cost_diff = post_usage.get('totalCost', 0) - pre_usage.get('totalCost', 0)
+    
+    # Return usage stats in expected format
+    return {
+        'input_tokens': max(0, input_diff),
+        'output_tokens': max(0, output_diff),
+        'cost': max(0.0, cost_diff)
+    }
+
 # Global variables for signal handling
 current_subprocess = None
 current_progress = None
@@ -290,18 +329,20 @@ def select_theme_interactively() -> str:
             raise typer.Exit(1)
 
 def run_claude_with_progress(prompt: str, description: str = "Claude Code is thinking...") -> tuple[str, Dict[str, Any]]:
-    """Run Claude CLI with real-time progress indication and usage tracking"""
+    """Run Claude CLI with real-time progress indication and usage tracking via ccusage"""
     global current_subprocess, current_progress
     
     config = Config()
     claude_cmd = config.get('claude_cmd', 'claude')
+    
+    # Get usage before Claude call for comparison
+    pre_usage = get_latest_usage()
     
     # Prepare Claude command
     cmd = [claude_cmd, '--print', prompt]
     
     output_lines = []
     stderr_lines = []
-    usage_stats = {}
     
     def read_stream(stream, lines_list):
         """Read from stream and collect output"""
@@ -361,27 +402,6 @@ def run_claude_with_progress(prompt: str, description: str = "Claude Code is thi
                 error_msg = '\n'.join(stderr_lines) if stderr_lines else "Claude Code execution failed"
                 raise Exception(f"Claude Code failed: {error_msg}")
             
-            # Parse usage statistics from stderr
-            for line in stderr_lines:
-                if "Input tokens:" in line:
-                    try:
-                        usage_stats['input_tokens'] = int(line.split(':')[1].strip())
-                    except:
-                        pass
-                elif "Output tokens:" in line:
-                    try:
-                        usage_stats['output_tokens'] = int(line.split(':')[1].strip())
-                    except:
-                        pass
-                elif "Cost:" in line or "$" in line:
-                    try:
-                        # Extract cost from line
-                        import re
-                        cost_match = re.search(r'\$([0-9]+\.?[0-9]*)', line)
-                        if cost_match:
-                            usage_stats['cost'] = float(cost_match.group(1))
-                    except:
-                        pass
             
         except Exception as e:
             current_progress = None
@@ -395,15 +415,19 @@ def run_claude_with_progress(prompt: str, description: str = "Claude Code is thi
     # Combine output
     full_output = '\n'.join(output_lines)
     
+    # Get usage after Claude call and calculate difference
+    post_usage = get_latest_usage()
+    usage_stats = calculate_usage_difference(pre_usage, post_usage)
+    
     # Show usage statistics if available
-    if usage_stats:
+    if usage_stats and any(usage_stats.get(key, 0) > 0 for key in ['input_tokens', 'output_tokens']):
         console.print("\n[bold cyan]📊 Usage Statistics:[/bold cyan]")
         if 'input_tokens' in usage_stats:
             console.print(f"  Input tokens: [green]{usage_stats['input_tokens']:,}[/green]")
         if 'output_tokens' in usage_stats:
             console.print(f"  Output tokens: [green]{usage_stats['output_tokens']:,}[/green]")
         if 'cost' in usage_stats:
-            console.print(f"  Estimated cost: [green]${usage_stats['cost']:.4f}[/green]")
+            console.print(f"  Cost: [green]${usage_stats['cost']:.4f}[/green]")
         console.print()
     
     return full_output, usage_stats
@@ -1706,8 +1730,33 @@ def gen(
             with open(os.path.join(output_dir, 'index.html'), 'w') as f:
                 f.write(strip_code_blocks(output))
         
+        # Save minimal design analysis for cost tracking
+        fast_analysis = {
+            'generation_mode': 'fast',
+            'created_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'product_description': desc,
+            'theme': theme,
+            'framework': framework,
+            'total_usage': {
+                'input_tokens': stats.get('input_tokens', 0),
+                'output_tokens': stats.get('output_tokens', 0),
+                'cost': stats.get('cost', 0.0)
+            },
+            'generation_stats': stats
+        }
+        
+        try:
+            with open(os.path.join(output_dir, 'design_analysis.json'), 'w') as f:
+                json.dump(fast_analysis, f, indent=2)
+        except Exception as e:
+            console.print(f"[yellow]⚠️  Could not save cost tracking data: {e}[/yellow]")
+
         console.print(f"[bold green]✅ Landing page generated successfully![/bold green]")
         console.print(f"📁 Output saved to: [bold]{output_dir}[/bold]")
+        
+        # Display usage stats  
+        if stats:
+            console.print(f"\n[dim]Tokens: {stats.get('input_tokens', 0)} in, {stats.get('output_tokens', 0)} out | Cost: ~${stats.get('cost', 0.0):.4f}[/dim]")
         
     else:
         # Full design thinking process
@@ -2693,6 +2742,7 @@ def help(
         table.add_row("regen", "Regenerate specific sections", "ccux regen --section hero,pricing")
         table.add_row("theme", "Change design theme", "ccux theme minimal")
         table.add_row("form", "Advanced form control with customization", "ccux form edit --type contact")
+        table.add_row("cost", "Show cost analysis", "ccux cost --detailed")
         table.add_row("help", "Show detailed help", "ccux help themes")
         table.add_row("version", "Show version info", "ccux version")
         
@@ -2949,9 +2999,18 @@ def projects():
     table.add_column("Status", style="yellow", width=10)
     
     for project in projects:
-        # Check if it has design analysis (full vs simple generation)
-        analysis_exists = os.path.exists(os.path.join(project['directory'], 'design_analysis.json'))
-        status = "Full" if analysis_exists else "Simple"
+        # Check if it has design analysis and determine generation mode
+        analysis_file = os.path.join(project['directory'], 'design_analysis.json')
+        if os.path.exists(analysis_file):
+            try:
+                with open(analysis_file, 'r') as f:
+                    analysis = json.load(f)
+                generation_mode = analysis.get('generation_mode', 'full')
+                status = "Fast" if generation_mode == 'fast' else "Full"
+            except:
+                status = "Full"  # Default for existing projects
+        else:
+            status = "No Data"  # No design analysis file
         
         table.add_row(
             project['directory'] + "/",
@@ -2976,6 +3035,257 @@ def init():
     except Exception as e:
         console.print(f"[red]❌ Error running interactive app: {e}[/red]")
         raise typer.Exit(1)
+
+@app.command()
+def cost(
+    project_dir: Optional[str] = typer.Argument(None, help="Specific project directory to analyze"),
+    detailed: bool = typer.Option(False, "--detailed", "-d", help="Show detailed breakdown by operation"),
+    summary: bool = typer.Option(False, "--summary", "-s", help="Show summary statistics only")
+):
+    """Show cost analysis for CCUX projects
+    
+    Analyzes token usage and estimated costs from design_analysis.json files.
+    Without arguments, scans current directory for all CCUX projects.
+    """
+    
+    try:
+        projects_to_analyze = []
+        
+        if project_dir:
+            # Analyze specific project
+            if not os.path.exists(project_dir):
+                console.print(f"[red]❌ Project directory not found: {project_dir}[/red]")
+                raise typer.Exit(1)
+            
+            analysis_file = os.path.join(project_dir, 'design_analysis.json')
+            if not os.path.exists(analysis_file):
+                console.print(f"[yellow]⚠️  No design analysis found in: {project_dir}[/yellow]")
+                console.print("This project may have been generated in fast mode.")
+                raise typer.Exit(1)
+            
+            projects_to_analyze.append({
+                'directory': project_dir,
+                'name': os.path.basename(project_dir) or 'Current',
+                'analysis_file': analysis_file
+            })
+        else:
+            # Discover all CCUX projects in current directory
+            current_dir = os.getcwd()
+            for item in os.listdir(current_dir):
+                item_path = os.path.join(current_dir, item)
+                if os.path.isdir(item_path):
+                    index_file = os.path.join(item_path, 'index.html')
+                    analysis_file = os.path.join(item_path, 'design_analysis.json')
+                    
+                    if os.path.exists(index_file) and os.path.exists(analysis_file):
+                        projects_to_analyze.append({
+                            'directory': item,
+                            'name': item.replace('-', ' ').title(),
+                            'analysis_file': analysis_file
+                        })
+        
+        if not projects_to_analyze:
+            console.print("[yellow]No CCUX projects with cost data found.[/yellow]")
+            console.print("Projects need design_analysis.json files to show cost information.")
+            raise typer.Exit(1)
+        
+        # Analyze costs
+        total_input_tokens = 0
+        total_output_tokens = 0
+        total_cost = 0.0
+        project_costs = []
+        
+        for project in projects_to_analyze:
+            try:
+                with open(project['analysis_file'], 'r') as f:
+                    analysis = json.load(f)
+                
+                project_cost = analyze_project_costs(analysis, project['name'], detailed)
+                project_costs.append(project_cost)
+                
+                total_input_tokens += project_cost['input_tokens']
+                total_output_tokens += project_cost['output_tokens']
+                total_cost += project_cost['total_cost']
+                
+            except Exception as e:
+                console.print(f"[yellow]⚠️  Error reading {project['name']}: {e}[/yellow]")
+        
+        # Display results
+        if not summary:
+            console.print("\n[bold cyan]💰 CCUX Cost Analysis[/bold cyan]")
+            console.print("=" * 50)
+            
+            for project_cost in project_costs:
+                display_project_costs(project_cost, detailed)
+                console.print()
+        
+        # Summary
+        if len(project_costs) > 1 or summary:
+            console.print("[bold green]📊 Total Summary[/bold green]")
+            console.print("-" * 30)
+            console.print(f"Projects analyzed: [cyan]{len(project_costs)}[/cyan]")
+            console.print(f"Total input tokens: [green]{total_input_tokens:,}[/green]")
+            console.print(f"Total output tokens: [green]{total_output_tokens:,}[/green]") 
+            console.print(f"Total estimated cost: [bold green]${total_cost:.3f}[/bold green]")
+            
+            if total_cost > 0:
+                avg_cost_per_project = total_cost / len(project_costs)
+                console.print(f"Average cost per project: [cyan]${avg_cost_per_project:.3f}[/cyan]")
+        
+        console.print(f"\n[dim]💡 Costs are estimates based on Claude usage patterns[/dim]")
+        
+    except Exception as e:
+        console.print(f"[red]❌ Error analyzing costs: {e}[/red]")
+        raise typer.Exit(1)
+
+
+def analyze_project_costs(analysis_data: dict, project_name: str, detailed: bool) -> dict:
+    """Analyze cost data from a project's design analysis"""
+    
+    project_cost = {
+        'name': project_name,
+        'input_tokens': 0,
+        'output_tokens': 0,
+        'total_cost': 0.0,
+        'operations': []
+    }
+    
+    # Main design phase costs (both full and fast mode)
+    if 'total_usage' in analysis_data:
+        usage = analysis_data['total_usage']
+        project_cost['input_tokens'] += usage.get('input_tokens', 0)
+        project_cost['output_tokens'] += usage.get('output_tokens', 0)
+        project_cost['total_cost'] += usage.get('cost', 0.0)
+        
+        if detailed:
+            generation_mode = analysis_data.get('generation_mode', 'full')
+            operation_type = 'Fast Generation' if generation_mode == 'fast' else 'Full Design Process'
+            
+            project_cost['operations'].append({
+                'type': operation_type,
+                'input_tokens': usage.get('input_tokens', 0),
+                'output_tokens': usage.get('output_tokens', 0),
+                'cost': usage.get('cost', 0.0),
+                'timestamp': analysis_data.get('created_at', 'Unknown')
+            })
+    
+    # Individual phase costs (if available)
+    if 'design_phases' in analysis_data and detailed:
+        phases = analysis_data['design_phases']
+        for phase_name, phase_data in phases.items():
+            if 'stats' in phase_data:
+                stats = phase_data['stats']
+                if any(k in stats for k in ['input_tokens', 'output_tokens', 'cost']):
+                    project_cost['operations'].append({
+                        'type': f'Phase: {phase_name.replace("_", " ").title()}',
+                        'input_tokens': stats.get('input_tokens', 0),
+                        'output_tokens': stats.get('output_tokens', 0),
+                        'cost': stats.get('cost', 0.0),
+                        'timestamp': 'During generation'
+                    })
+    
+    # Editing operations costs
+    if 'edit_history' in analysis_data:
+        for edit in analysis_data['edit_history']:
+            if 'usage_stats' in edit:
+                stats = edit['usage_stats']
+                edit_input = stats.get('input_tokens', 0)
+                edit_output = stats.get('output_tokens', 0)
+                edit_cost = stats.get('cost', 0.0)
+                
+                project_cost['input_tokens'] += edit_input
+                project_cost['output_tokens'] += edit_output
+                project_cost['total_cost'] += edit_cost
+                
+                if detailed:
+                    project_cost['operations'].append({
+                        'type': f'Edit: {edit.get("instruction", "Content Edit")[:30]}...',
+                        'input_tokens': edit_input,
+                        'output_tokens': edit_output,
+                        'cost': edit_cost,
+                        'timestamp': edit.get('timestamp', 'Unknown')
+                    })
+    
+    # Theme changes costs
+    if 'theme_history' in analysis_data:
+        for theme_change in analysis_data['theme_history']:
+            if 'usage_stats' in theme_change:
+                stats = theme_change['usage_stats']
+                theme_input = stats.get('input_tokens', 0)
+                theme_output = stats.get('output_tokens', 0)
+                theme_cost = stats.get('cost', 0.0)
+                
+                project_cost['input_tokens'] += theme_input
+                project_cost['output_tokens'] += theme_output  
+                project_cost['total_cost'] += theme_cost
+                
+                if detailed:
+                    project_cost['operations'].append({
+                        'type': f'Theme Change to {theme_change.get("new_theme", "Unknown")}',
+                        'input_tokens': theme_input,
+                        'output_tokens': theme_output,
+                        'cost': theme_cost,
+                        'timestamp': theme_change.get('timestamp', 'Unknown')
+                    })
+    
+    # Form operations costs
+    if 'form_history' in analysis_data:
+        for form_op in analysis_data['form_history']:
+            if 'usage_stats' in form_op:
+                stats = form_op['usage_stats']
+                form_input = stats.get('input_tokens', 0)
+                form_output = stats.get('output_tokens', 0)
+                form_cost = stats.get('cost', 0.0)
+                
+                project_cost['input_tokens'] += form_input
+                project_cost['output_tokens'] += form_output
+                project_cost['total_cost'] += form_cost
+                
+                if detailed:
+                    operation_type = f"Form {form_op.get('action', 'operation').title()}"
+                    if 'type' in form_op and form_op['type']:
+                        operation_type += f" ({form_op['type']})"
+                    
+                    project_cost['operations'].append({
+                        'type': operation_type,
+                        'input_tokens': form_input,
+                        'output_tokens': form_output,
+                        'cost': form_cost,
+                        'timestamp': form_op.get('timestamp', 'Unknown')
+                    })
+    
+    return project_cost
+
+
+def display_project_costs(project_cost: dict, detailed: bool):
+    """Display cost information for a single project"""
+    
+    console.print(f"[bold blue]📁 {project_cost['name']}[/bold blue]")
+    console.print(f"Input tokens: [green]{project_cost['input_tokens']:,}[/green]")
+    console.print(f"Output tokens: [green]{project_cost['output_tokens']:,}[/green]")
+    console.print(f"Total cost: [bold green]${project_cost['total_cost']:.3f}[/bold green]")
+    
+    if detailed and project_cost['operations']:
+        console.print("\n[cyan]Operation Breakdown:[/cyan]")
+        
+        table = Table(show_header=True, header_style="bold cyan", box=None)
+        table.add_column("Operation", style="yellow", width=25)
+        table.add_column("In", justify="right", width=8)
+        table.add_column("Out", justify="right", width=8) 
+        table.add_column("Cost", justify="right", width=8)
+        table.add_column("When", style="dim", width=12)
+        
+        for op in project_cost['operations']:
+            table.add_row(
+                op['type'][:25],
+                f"{op['input_tokens']:,}",
+                f"{op['output_tokens']:,}",
+                f"${op['cost']:.3f}",
+                op['timestamp'][:12]
+            )
+        
+        console.print(table)
+
 
 @app.command()
 def version():

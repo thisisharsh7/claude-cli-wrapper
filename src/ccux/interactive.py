@@ -7,6 +7,7 @@ Complete interactive interface for CCUX landing page generation
 import os
 import sys
 import time
+import json
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from rich.console import Console
@@ -21,6 +22,78 @@ from rich.prompt import Prompt, Confirm, IntPrompt
 from .cli import safe_json_parse
 
 console = Console()
+
+def get_key_with_esc_support(prompt_text: str, default: str = "") -> str:
+    """Get single key press with ESC support"""
+    import sys
+    import tty
+    import termios
+    
+    console.print(f"[bold]{prompt_text} (or press ESC to exit)[/bold]")
+    
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+        
+        # Check for ESC key (ASCII 27)
+        if ord(ch) == 27:
+            console.print("\n[yellow]ESC pressed - exiting application...[/yellow]")
+            sys.exit(0)
+        
+        return ch
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+def prompt_with_esc_support(prompt_text: str, default: str = "") -> str:
+    """Prompt for input with ESC support"""
+    import sys
+    import tty
+    import termios
+    
+    console.print(f"[bold]{prompt_text}[/bold]")
+    if default:
+        console.print(f"[dim]Default: {default}[/dim]")
+    console.print("[dim]Press ESC to exit, Enter to confirm[/dim]")
+    
+    input_buffer = ""
+    
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        
+        while True:
+            ch = sys.stdin.read(1)
+            
+            # Check for ESC key (ASCII 27)
+            if ord(ch) == 27:
+                console.print("\n[yellow]ESC pressed - exiting application...[/yellow]")
+                sys.exit(0)
+            
+            # Check for Enter key
+            if ch in ['\r', '\n'] or ord(ch) == 13:
+                result = input_buffer if input_buffer else default
+                console.print(f"\n[green]Input: {result}[/green]")
+                return result
+            
+            # Check for backspace
+            if ord(ch) == 127:
+                if input_buffer:
+                    input_buffer = input_buffer[:-1]
+                    sys.stdout.write('\b \b')
+                    sys.stdout.flush()
+                continue
+            
+            # Regular character input
+            if ch.isprintable():
+                input_buffer += ch
+                sys.stdout.write(ch)
+                sys.stdout.flush()
+                
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 @dataclass
 class MenuOption:
@@ -72,17 +145,41 @@ class InteractiveMenu:
         
         # Get user choice
         try:
+            import sys
+            import tty
+            import termios
+            
             while True:
-                choice = IntPrompt.ask(
-                    f"[bold]Choose option (1-{len(self.options)})[/bold]",
-                    default=1,
-                    show_default=True
-                )
-                if 1 <= choice <= len(self.options):
-                    return self.options[choice - 1].key
-                else:
-                    console.print(f"[red]Please enter a number between 1 and {len(self.options)}[/red]")
+                console.print(f"[bold]Choose option (1-{len(self.options)}) or press ESC to exit[/bold]")
+                
+                # Get single key press
+                fd = sys.stdin.fileno()
+                old_settings = termios.tcgetattr(fd)
+                try:
+                    tty.setraw(sys.stdin.fileno())
+                    ch = sys.stdin.read(1)
+                    
+                    # Check for ESC key (ASCII 27)
+                    if ord(ch) == 27:
+                        console.print("\n[yellow]ESC pressed - exiting application...[/yellow]")
+                        return 'exit'
+                    
+                    # Check for number keys
+                    if ch.isdigit():
+                        choice = int(ch)
+                        if 1 <= choice <= len(self.options):
+                            console.print(f"\n[green]Selected: {choice}[/green]")
+                            return self.options[choice - 1].key
+                        else:
+                            console.print(f"\n[red]Please enter a number between 1 and {len(self.options)}[/red]")
+                    else:
+                        console.print(f"\n[red]Please enter a number between 1 and {len(self.options)} or press ESC[/red]")
+                        
+                finally:
+                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                    
         except (KeyboardInterrupt, EOFError):
+            console.print("\n[yellow]Interrupted - exiting application...[/yellow]")
             return 'exit'
 
 class InteractiveForm:
@@ -129,10 +226,9 @@ class InteractiveForm:
                 
                 if field.field_type == "text":
                     if field.multiline:
-                        console.print(f"[dim]{field.placeholder}[/dim]")
-                        value = Prompt.ask("", default="")
+                        value = prompt_with_esc_support(f"{field.placeholder}", "")
                     else:
-                        value = Prompt.ask(f"[dim]{field.placeholder}[/dim]", default="")
+                        value = prompt_with_esc_support(f"{field.placeholder}", "")
                     self.form_data[field.name] = value
                     
                 elif field.field_type == "dropdown":
@@ -151,18 +247,23 @@ class InteractiveForm:
                         console.print()
                         
                         while True:
-                            choice = IntPrompt.ask(
-                                f"[bold]Choose option (1-{len(field.options)})[/bold]",
-                                default=1,
-                                show_default=True
-                            )
-                            if 1 <= choice <= len(field.options):
-                                selected_key = field.options[choice - 1][0]
-                                self.form_data[field.name] = selected_key
-                                console.print(f"[green]✓ Selected: {selected_key}[/green]")
-                                break
-                            else:
-                                console.print(f"[red]Please enter a number between 1 and {len(field.options)}[/red]")
+                            try:
+                                ch = get_key_with_esc_support(f"Choose option (1-{len(field.options)})")
+                                if ch.isdigit():
+                                    choice = int(ch)
+                                    if 1 <= choice <= len(field.options):
+                                        selected_key = field.options[choice - 1][0]
+                                        self.form_data[field.name] = selected_key
+                                        console.print(f"\n[green]✓ Selected: {selected_key}[/green]")
+                                        break
+                                    else:
+                                        console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
+                                else:
+                                    console.print(f"\n[red]Please enter a valid number[/red]")
+                            except SystemExit:
+                                raise
+                            except Exception:
+                                console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
                 
                 elif field.field_type == "multi_url":
                     urls = []
@@ -170,8 +271,8 @@ class InteractiveForm:
                     console.print(f"[dim]Press Enter without input to finish, or type 'skip' to skip URLs[/dim]")
                     
                     for i in range(3):
-                        url_prompt = f"[bold]URL {i+1}/3[/bold]" if i == 0 else f"URL {i+1}/3 (optional)"
-                        url = Prompt.ask(url_prompt, default="")
+                        url_prompt = f"URL {i+1}/3" if i == 0 else f"URL {i+1}/3 (optional)"
+                        url = prompt_with_esc_support(url_prompt, "")
                         
                         if url.lower() == 'skip':
                             break
@@ -233,10 +334,9 @@ class InteractiveForm:
                 
                 if field.field_type == "text":
                     if field.multiline:
-                        console.print(f"[dim]{field.placeholder}[/dim]")
-                        value = Prompt.ask("", default="")
+                        value = prompt_with_esc_support(f"{field.placeholder}", "")
                     else:
-                        value = Prompt.ask(f"[dim]{field.placeholder}[/dim]", default="")
+                        value = prompt_with_esc_support(f"{field.placeholder}", "")
                     self.form_data[field.name] = value
                     
                 elif field.field_type == "dropdown":
@@ -255,18 +355,23 @@ class InteractiveForm:
                         console.print()
                         
                         while True:
-                            choice = IntPrompt.ask(
-                                f"[bold]Choose option (1-{len(field.options)})[/bold]",
-                                default=1,
-                                show_default=True
-                            )
-                            if 1 <= choice <= len(field.options):
-                                selected_key = field.options[choice - 1][0]
-                                self.form_data[field.name] = selected_key
-                                console.print(f"[green]✓ Selected: {selected_key}[/green]")
-                                break
-                            else:
-                                console.print(f"[red]Please enter a number between 1 and {len(field.options)}[/red]")
+                            try:
+                                ch = get_key_with_esc_support(f"Choose option (1-{len(field.options)})")
+                                if ch.isdigit():
+                                    choice = int(ch)
+                                    if 1 <= choice <= len(field.options):
+                                        selected_key = field.options[choice - 1][0]
+                                        self.form_data[field.name] = selected_key
+                                        console.print(f"\n[green]✓ Selected: {selected_key}[/green]")
+                                        break
+                                    else:
+                                        console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
+                                else:
+                                    console.print(f"\n[red]Please enter a valid number[/red]")
+                            except SystemExit:
+                                raise
+                            except Exception:
+                                console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
                 
                 console.print()
             
@@ -279,8 +384,8 @@ class InteractiveForm:
                 console.print(f"[dim]Press Enter without input to finish, or type 'skip' to skip URLs[/dim]")
                 
                 for i in range(3):
-                    url_prompt = f"[bold]URL {i+1}/3[/bold]" if i == 0 else f"URL {i+1}/3 (optional)"
-                    url = Prompt.ask(url_prompt, default="")
+                    url_prompt = f"URL {i+1}/3" if i == 0 else f"URL {i+1}/3 (optional)"
+                    url = prompt_with_esc_support(url_prompt, "")
                     
                     if url.lower() == 'skip':
                         break
@@ -364,9 +469,42 @@ class CCUXApp:
         console.print(Align.center(panel))
         
         try:
-            Confirm.ask("Ready to start?", default=True)
-            return True
+            import sys
+            import tty
+            import termios
+            
+            console.print(f"[bold]Ready to start? Press Y/Enter to continue or ESC to exit[/bold]")
+            
+            # Get single key press
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                ch = sys.stdin.read(1)
+                
+                # Check for ESC key (ASCII 27)
+                if ord(ch) == 27:
+                    console.print("\n[yellow]ESC pressed - exiting application...[/yellow]")
+                    return False
+                
+                # Enter key or Y key continues
+                if ch in ['\r', '\n', 'y', 'Y'] or ord(ch) == 13:
+                    console.print("\n[green]Starting CCUX...[/green]")
+                    return True
+                
+                # N key exits
+                if ch in ['n', 'N']:
+                    return False
+                    
+                # Any other key continues
+                console.print("\n[green]Starting CCUX...[/green]")
+                return True
+                    
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                
         except (KeyboardInterrupt, EOFError):
+            console.print("\n[yellow]Interrupted - exiting application...[/yellow]")
             return False
     
     def show_main_menu(self):
@@ -717,6 +855,28 @@ class CCUXApp:
             html_file = os.path.join(output_dir, 'index.html')
             with open(html_file, 'w') as f:
                 f.write(strip_code_blocks(output))
+            
+            # Save minimal design analysis for cost tracking
+            fast_analysis = {
+                'generation_mode': 'fast',
+                'created_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'product_description': desc,
+                'theme': theme,
+                'framework': 'html',
+                'include_forms': include_forms,
+                'total_usage': {
+                    'input_tokens': stats.get('input_tokens', 0),
+                    'output_tokens': stats.get('output_tokens', 0),
+                    'cost': stats.get('cost', 0.0)
+                },
+                'generation_stats': stats
+            }
+            
+            try:
+                with open(os.path.join(output_dir, 'design_analysis.json'), 'w') as f:
+                    json.dump(fast_analysis, f, indent=2)
+            except Exception as e:
+                console.print(f"[yellow]⚠️  Could not save cost tracking data: {e}[/yellow]")
             
             console.print(f"[green]✅ Landing page generated successfully![/green]")
             console.print(f"[cyan]💰 Cost: ${stats.get('cost', 0.0):.3f} | Tokens: {stats.get('input_tokens', 0):,} in, {stats.get('output_tokens', 0):,} out[/cyan]")
