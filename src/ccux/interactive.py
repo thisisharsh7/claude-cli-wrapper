@@ -152,31 +152,93 @@ class InteractiveMenu:
             while True:
                 console.print(f"[bold]Choose option (1-{len(self.options)}) or press ESC to exit[/bold]")
                 
-                # Get single key press
-                fd = sys.stdin.fileno()
-                old_settings = termios.tcgetattr(fd)
-                try:
-                    tty.setraw(sys.stdin.fileno())
-                    ch = sys.stdin.read(1)
-                    
-                    # Check for ESC key (ASCII 27)
-                    if ord(ch) == 27:
-                        console.print("\n[yellow]ESC pressed - exiting application...[/yellow]")
-                        return 'exit'
-                    
-                    # Check for number keys
-                    if ch.isdigit():
-                        choice = int(ch)
-                        if 1 <= choice <= len(self.options):
-                            console.print(f"\n[green]Selected: {choice}[/green]")
-                            return self.options[choice - 1].key
-                        else:
-                            console.print(f"\n[red]Please enter a number between 1 and {len(self.options)}[/red]")
-                    else:
-                        console.print(f"\n[red]Please enter a number between 1 and {len(self.options)} or press ESC[/red]")
+                # For single digit options, use single key press
+                if len(self.options) <= 9:
+                    # Get single key press
+                    fd = sys.stdin.fileno()
+                    old_settings = termios.tcgetattr(fd)
+                    try:
+                        tty.setraw(sys.stdin.fileno())
+                        ch = sys.stdin.read(1)
                         
-                finally:
-                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                        # Check for ESC key (ASCII 27)
+                        if ord(ch) == 27:
+                            console.print("\n[yellow]ESC pressed - exiting application...[/yellow]")
+                            return 'exit'
+                        
+                        # Check for number keys
+                        if ch.isdigit():
+                            choice = int(ch)
+                            if 1 <= choice <= len(self.options):
+                                console.print(f"\n[green]Selected: {choice}[/green]")
+                                return self.options[choice - 1].key
+                            else:
+                                console.print(f"\n[red]Please enter a number between 1 and {len(self.options)}[/red]")
+                        else:
+                            console.print(f"\n[red]Please enter a number between 1 and {len(self.options)} or press ESC[/red]")
+                            
+                    finally:
+                        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                else:
+                    # For multi-digit options, use line input with ESC support
+                    try:
+                        # Check for ESC key first
+                        fd = sys.stdin.fileno()
+                        old_settings = termios.tcgetattr(fd)
+                        input_buffer = ""
+                        
+                        try:
+                            tty.setraw(sys.stdin.fileno())
+                            
+                            while True:
+                                ch = sys.stdin.read(1)
+                                
+                                # Check for ESC key (ASCII 27)
+                                if ord(ch) == 27:
+                                    console.print("\n[yellow]ESC pressed - exiting application...[/yellow]")
+                                    return 'exit'
+                                
+                                # Check for Enter key
+                                if ch in ['\r', '\n'] or ord(ch) == 13:
+                                    if input_buffer.strip():
+                                        try:
+                                            choice = int(input_buffer.strip())
+                                            if 1 <= choice <= len(self.options):
+                                                console.print(f"\n[green]Selected: {choice}[/green]")
+                                                return self.options[choice - 1].key
+                                            else:
+                                                console.print(f"\n[red]Please enter a number between 1 and {len(self.options)}[/red]")
+                                                break
+                                        except ValueError:
+                                            console.print(f"\n[red]Please enter a valid number[/red]")
+                                            break
+                                    else:
+                                        console.print(f"\n[red]Please enter a number between 1 and {len(self.options)}[/red]")
+                                        break
+                                
+                                # Check for backspace
+                                if ord(ch) == 127:
+                                    if input_buffer:
+                                        input_buffer = input_buffer[:-1]
+                                        sys.stdout.write('\b \b')
+                                        sys.stdout.flush()
+                                    continue
+                                
+                                # Regular character input (only digits)
+                                if ch.isdigit():
+                                    input_buffer += ch
+                                    sys.stdout.write(ch)
+                                    sys.stdout.flush()
+                                elif ch.isprintable() and not ch.isspace():
+                                    # Ignore non-digit characters
+                                    continue
+                                    
+                        finally:
+                            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                            
+                    except Exception as e:
+                        console.print(f"\n[red]Input error: {e}[/red]")
+                        break
                     
         except (KeyboardInterrupt, EOFError):
             console.print("\n[yellow]Interrupted - exiting application...[/yellow]")
@@ -248,18 +310,37 @@ class InteractiveForm:
                         
                         while True:
                             try:
-                                ch = get_key_with_esc_support(f"Choose option (1-{len(field.options)})")
-                                if ch.isdigit():
-                                    choice = int(ch)
-                                    if 1 <= choice <= len(field.options):
-                                        selected_key = field.options[choice - 1][0]
-                                        self.form_data[field.name] = selected_key
-                                        console.print(f"\n[green]✓ Selected: {selected_key}[/green]")
-                                        break
+                                # For dropdown with <= 9 options, use single key
+                                if len(field.options) <= 9:
+                                    ch = get_key_with_esc_support(f"Choose option (1-{len(field.options)})")
+                                    if ch.isdigit():
+                                        choice = int(ch)
+                                        if 1 <= choice <= len(field.options):
+                                            selected_key = field.options[choice - 1][0]
+                                            self.form_data[field.name] = selected_key
+                                            console.print(f"\n[green]✓ Selected: {selected_key}[/green]")
+                                            break
+                                        else:
+                                            console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
+                                    else:
+                                        console.print(f"\n[red]Please enter a valid number[/red]")
+                                else:
+                                    # For dropdown with >9 options, use multi-digit input
+                                    selection = prompt_with_esc_support(f"Choose option (1-{len(field.options)})", "")
+                                    if selection.strip():
+                                        try:
+                                            choice = int(selection.strip())
+                                            if 1 <= choice <= len(field.options):
+                                                selected_key = field.options[choice - 1][0]
+                                                self.form_data[field.name] = selected_key
+                                                console.print(f"\n[green]✓ Selected: {selected_key}[/green]")
+                                                break
+                                            else:
+                                                console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
+                                        except ValueError:
+                                            console.print(f"\n[red]Please enter a valid number[/red]")
                                     else:
                                         console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
-                                else:
-                                    console.print(f"\n[red]Please enter a valid number[/red]")
                             except SystemExit:
                                 raise
                             except Exception:
@@ -356,18 +437,37 @@ class InteractiveForm:
                         
                         while True:
                             try:
-                                ch = get_key_with_esc_support(f"Choose option (1-{len(field.options)})")
-                                if ch.isdigit():
-                                    choice = int(ch)
-                                    if 1 <= choice <= len(field.options):
-                                        selected_key = field.options[choice - 1][0]
-                                        self.form_data[field.name] = selected_key
-                                        console.print(f"\n[green]✓ Selected: {selected_key}[/green]")
-                                        break
+                                # For dropdown with <= 9 options, use single key
+                                if len(field.options) <= 9:
+                                    ch = get_key_with_esc_support(f"Choose option (1-{len(field.options)})")
+                                    if ch.isdigit():
+                                        choice = int(ch)
+                                        if 1 <= choice <= len(field.options):
+                                            selected_key = field.options[choice - 1][0]
+                                            self.form_data[field.name] = selected_key
+                                            console.print(f"\n[green]✓ Selected: {selected_key}[/green]")
+                                            break
+                                        else:
+                                            console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
+                                    else:
+                                        console.print(f"\n[red]Please enter a valid number[/red]")
+                                else:
+                                    # For dropdown with >9 options, use multi-digit input
+                                    selection = prompt_with_esc_support(f"Choose option (1-{len(field.options)})", "")
+                                    if selection.strip():
+                                        try:
+                                            choice = int(selection.strip())
+                                            if 1 <= choice <= len(field.options):
+                                                selected_key = field.options[choice - 1][0]
+                                                self.form_data[field.name] = selected_key
+                                                console.print(f"\n[green]✓ Selected: {selected_key}[/green]")
+                                                break
+                                            else:
+                                                console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
+                                        except ValueError:
+                                            console.print(f"\n[red]Please enter a valid number[/red]")
                                     else:
                                         console.print(f"\n[red]Please enter a number between 1 and {len(field.options)}[/red]")
-                                else:
-                                    console.print(f"\n[red]Please enter a valid number[/red]")
                             except SystemExit:
                                 raise
                             except Exception:
