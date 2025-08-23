@@ -1,10 +1,20 @@
 # CCUX — Claude Code UI Generator
 
-> Professional landing pages from your terminal using AI
+> Professional landing pages from your terminal using AI — **Now with Web Platform!**
 
-**🎆 Version 2.0 - Now with Modular Architecture!**
+**🎆 Version 2.1 - CLI + Web Platform Integration!**
 
 **Open source and completely free**
+
+## 🌟 New: CCUX Web Platform
+
+**Access CCUX through a beautiful web interface!** The complete web platform includes:
+
+- **🖥️ Modern Web UI**: Next.js frontend with "Eeveelution" interface
+- **⚡ FastAPI Backend**: RESTful API wrapping the CCUX CLI
+- **🔄 Real-time Progress**: Live generation tracking with status updates
+- **📊 Project Dashboard**: Manage all your generated projects in one place
+- **🎯 Two Access Methods**: Use the CLI or web interface — your choice!
 
 ## What is CCUX?
 
@@ -72,29 +82,44 @@ Choose from carefully designed themes:
 
 ## Quick Start
 
-### Interactive Mode (Recommended)
+### 🌐 Web Platform (New!)
 ```bash
-# Install
+# Clone the repository
+git clone <repository-url>
+cd cool/
+
+# Start both frontend and backend
+./start.sh
+
+# Open http://localhost:3000 in your browser
+```
+
+### 💻 CLI Mode  
+```bash
+# Install CCUX CLI
 pip install ccux
 
-# Launch interactive app
+# Interactive terminal app
 ccux init
-```
 
-### Command Line Mode
-```bash
-# Generate a landing page
+# Command line generation
 ccux gen --desc "AI-powered project management tool" --theme brutalist
 
-# Regenerate specific sections
+# Advanced section management
 ccux regen --section hero,pricing
-
-# List existing projects
-ccux projects
-
-# Get help
-ccux help themes
 ```
+
+### 📋 Requirements
+
+**For CLI Usage:**
+- Python 3.9+ and pip
+- Claude CLI configured with API key
+
+**For Web Platform:**  
+- Python 3.11+ (backend)
+- Node.js 18+ (frontend)
+- CCUX CLI tool
+- Claude CLI configured
 
 ## Available Commands
 
@@ -192,7 +217,24 @@ python -m http.server 3000
 
 ## Project Structure
 
-### Generated Output
+### 🌐 Web Platform Structure
+```
+cool/
+├── backend/                 # FastAPI backend service
+│   ├── main.py             # FastAPI application entry
+│   ├── routes/             # API endpoint definitions  
+│   ├── services/           # CCUX CLI integration
+│   ├── models/             # Request/response models
+│   ├── projects/           # Generated project storage
+│   └── static/             # Web-served files
+├── frontend/               # Next.js frontend application  
+│   ├── app/                # Next.js 14 App Router pages
+│   ├── components/         # Reusable UI components
+│   └── lib/                # API client and utilities
+└── src/ccux/               # CCUX CLI source code
+```
+
+### 💻 CLI Generated Output
 ```
 output/                 # Your generated landing page
 ├── index.html         # Main landing page file
@@ -200,7 +242,7 @@ output/                 # Your generated landing page
 └── *.jpg              # Competitor screenshots (if any)
 ```
 
-### Codebase Architecture
+### 🏗️ CCUX Core Architecture
 ```
 src/ccux/
 ├── cli.py                   # User-facing CLI with help system
@@ -249,16 +291,61 @@ src/ccux/
 - `ccux help themes` - All theme descriptions  
 - `ccux help workflows` - Common usage patterns
 
-## Links
+## 🚀 Getting Started
+
+### Choose Your Interface
+
+**🌐 Web Platform** (Recommended for beginners)
+- Beautiful visual interface with "Eeveelution" theme
+- Real-time progress tracking and project management  
+- Perfect for designers and non-technical users
+- See `backend/README.md` and `frontend/README.md` for details
+
+**💻 CLI Tool** (Power users)
+- Terminal-based with full control and automation
+- Interactive mode with rich terminal UI
+- Perfect for developers and scripts
+- Install with `pip install ccux`
+
+### 📚 Documentation
+
+- **Backend API**: See `backend/README.md` for FastAPI documentation
+- **Frontend**: See `frontend/README.md` for Next.js setup and features
+- **CLI Commands**: Run `ccux help` for comprehensive command guide
+- **Themes**: Run `ccux help themes` for all theme descriptions
+
+## 🔗 Links
 
 - **PyPI**: [https://pypi.org/project/ccux/](https://pypi.org/project/ccux/)
 - **GitHub**: [https://github.com/thisisharsh7/claude-cli-wrapper](https://github.com/thisisharsh7/claude-cli-wrapper)
 - **Claude CLI**: [https://claude.ai/code](https://claude.ai/code)
 
+## 🎯 What's Next?
+
+1. **Try the Web Platform**: Run `./start.sh` and explore the visual interface
+2. **Use the CLI**: Install with `pip install ccux` and try `ccux init`  
+3. **Generate Your First Page**: Describe your product and watch it evolve
+4. **Explore Themes**: Try different design systems for your brand
+5. **Share Your Results**: Show off your AI-generated landing pages!
+
 ---
 
 **⭐ Star this project if you find it useful!**
 
-Built with enterprise-grade architecture and ❤️ for developers who live in the terminal.
+Built with enterprise-grade architecture and ❤️ for developers who love both terminal and web interfaces.
 
 **🚀 Ready for production • 🧩 Modular by design • 📊 Performance optimized**
+
+---
+
+## 🌐 Web Platform Available!
+
+**New: Complete web interface for CCUX!** A beautiful Next.js + FastAPI web application that makes AI-powered landing page generation accessible through an intuitive browser interface.
+
+**📖 See [README-WEB.md](README-WEB.md)** for the complete web platform documentation including:
+- Frontend + Backend setup and architecture
+- Real-time generation with project dashboard  
+- One-command startup with `./start.sh`
+- Full deployment guides for production
+
+**🎯 Choose your interface**: Terminal (this README) or Web (README-WEB.md) — both powered by the same AI engine!
