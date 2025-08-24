@@ -104,10 +104,13 @@ ccux init
 
 # Command line generation
 ccux gen --desc "AI-powered project management tool" --theme brutalist
+ccux gen --desc-file product-description.pdf --theme minimal
 
 # Advanced section management
 ccux regen --section hero,pricing
 ```
+
+
 
 ### 📋 Requirements
 

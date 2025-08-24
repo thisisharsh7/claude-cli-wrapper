@@ -1593,7 +1593,7 @@ def init():
 @app.command()
 def gen(
     desc: Optional[str] = typer.Option(None, "--desc", "-d", help="Product description"),
-    desc_file: Optional[str] = typer.Option(None, "--desc-file", help="Path to file containing product description"),
+    desc_file: Optional[str] = typer.Option(None, "--desc-file", help="Path to file containing product description (supports .txt and .pdf files)"),
     urls: Optional[List[str]] = typer.Option(None, "--url", "-u", help="Reference URLs (can be used multiple times)"),
     framework: Optional[str] = typer.Option(None, "--framework", "-f", help="Output framework (html|react)"),
     theme: Optional[str] = typer.Option(None, "--theme", "-t", help=f"Design theme ({'/'.join(get_theme_choices())})"),
@@ -1604,7 +1604,7 @@ def gen(
     """Generate a conversion-optimized landing page
     
     Run without arguments for interactive mode, or provide --desc for direct usage.
-    Use --desc-file to load description from a text file for longer copy.
+    Use --desc-file to load description from a text or PDF file for longer copy.
     """
     
     # Load configuration
@@ -1617,9 +1617,24 @@ def gen(
             console.print(f"[red]❌ Description file not found: {desc_file}[/red]")
             raise typer.Exit(1)
         try:
-            with open(desc_file, 'r', encoding='utf-8') as f:
-                desc = f.read().strip()
-            console.print(f"[green]📄 Description loaded from: {desc_file}[/green]")
+            # Check file extension to determine how to read
+            file_ext = os.path.splitext(desc_file.lower())[1]
+            
+            if file_ext == '.pdf':
+                # Read PDF file
+                import PyPDF2
+                with open(desc_file, 'rb') as f:
+                    pdf_reader = PyPDF2.PdfReader(f)
+                    desc = ""
+                    for page in pdf_reader.pages:
+                        desc += page.extract_text() + "\n"
+                    desc = desc.strip()
+                console.print(f"[green]📄 PDF description loaded from: {desc_file}[/green]")
+            else:
+                # Read text file
+                with open(desc_file, 'r', encoding='utf-8') as f:
+                    desc = f.read().strip()
+                console.print(f"[green]📄 Description loaded from: {desc_file}[/green]")
         except Exception as e:
             console.print(f"[red]❌ Error reading description file: {e}[/red]")
             raise typer.Exit(1)
@@ -2798,7 +2813,7 @@ def help(
         console.print("• Run [cyan]ccux gen[/cyan] (no args) for interactive mode")
         console.print("• Use [cyan]--no-design-thinking[/cyan] for faster generation")
         console.print("• Provide [cyan]--url[/cyan] references for better competitor analysis")
-        console.print("• Save long descriptions in a file and use [cyan]--desc-file[/cyan]")
+        console.print("• Save long descriptions in a text or PDF file and use [cyan]--desc-file[/cyan]")
         
     elif topic == "quickstart":
         console.print("[bold blue]CCUX Quick Start Guide[/bold blue]\n")
@@ -2888,7 +2903,7 @@ def help(
         examples_basic = [
             ("Interactive mode", "ccux gen", "Guided setup with prompts"),
             ("Simple generation", "ccux gen --desc 'AI writing tool'", "Quick page with minimal theme"),
-            ("From file", "ccux gen --desc-file product.txt", "Load long descriptions from file"),
+            ("From file", "ccux gen --desc-file product.txt", "Load descriptions from text/PDF file"),
             ("Fast mode", "ccux gen --desc 'SaaS tool' --no-design-thinking", "Skip full research process")
         ]
         

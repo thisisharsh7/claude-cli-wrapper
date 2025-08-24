@@ -92,7 +92,7 @@ Generate conversion-optimized landing page using AI design methodology
 
 **Options:**
 - `--desc, -d TEXT`: Product description
-- `--desc-file FILE`: Path to file containing product description  
+- `--desc-file FILE`: Path to file containing product description (supports .txt and .pdf files)
 - `--url, -u URL`: Reference URLs (max 3, can be used multiple times)
 - `--framework, -f [html|react]`: Output framework (default: html)
 - `--theme, -t THEME`: Design theme (default: minimal)

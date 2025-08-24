@@ -158,7 +158,7 @@ def help(topic: Optional[str] = typer.Argument(None, help="Help topic (quickstar
 @app.command()
 def gen(
     desc: Optional[str] = typer.Option(None, "--desc", "-d", help="Product description"),
-    desc_file: Optional[str] = typer.Option(None, "--desc-file", help="Path to file containing product description"),
+    desc_file: Optional[str] = typer.Option(None, "--desc-file", help="Path to file containing product description (supports .txt and .pdf files)"),
     url: Optional[List[str]] = typer.Option(None, "--url", "-u", help="Reference URLs (can be used multiple times, max 3)"),
     framework: Optional[str] = typer.Option("html", "--framework", "-f", help="Output framework (html|react)"),
     theme: Optional[str] = typer.Option("minimal", "--theme", "-t", help="Design theme"),
