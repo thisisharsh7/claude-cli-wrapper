@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ccux"
-version = "2.1.1"
+version = "2.2.1"
 description = "A sophisticated Python CLI tool that automatically generates conversion-optimized frontend landing pages using professional UX design thinking methodology"
 readme = "README.md"
 requires-python = ">=3.9"
